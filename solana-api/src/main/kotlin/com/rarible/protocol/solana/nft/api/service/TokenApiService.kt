@@ -2,19 +2,13 @@ package com.rarible.protocol.solana.nft.api.service
 
 import com.rarible.protocol.solana.common.continuation.DateIdContinuation
 import com.rarible.protocol.solana.common.meta.TokenMetaService
-import com.rarible.protocol.solana.common.model.Token
 import com.rarible.protocol.solana.common.model.TokenWithMeta
-import com.rarible.protocol.solana.common.repository.MetaplexMetaRepository
-import com.rarible.protocol.solana.common.repository.MetaplexOffChainMetaRepository
 import com.rarible.protocol.solana.common.repository.TokenRepository
 import com.rarible.protocol.solana.common.util.RoyaltyDistributor
 import com.rarible.protocol.solana.dto.RoyaltyDto
 import com.rarible.protocol.solana.nft.api.exceptions.EntityNotFoundApiException
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.merge
 import org.springframework.stereotype.Component
 import java.time.Instant
 
@@ -22,8 +16,6 @@ import java.time.Instant
 class TokenApiService(
     private val tokenRepository: TokenRepository,
     private val tokenMetaService: TokenMetaService,
-    private val metaplexMetaRepository: MetaplexMetaRepository,
-    private val metaplexOffChainMetaRepository: MetaplexOffChainMetaRepository
 ) {
 
     suspend fun findAll(
@@ -61,27 +53,6 @@ class TokenApiService(
             meta.metaFields.sellerFeeBasisPoints,
             creators
         ).map { RoyaltyDto(it.key, it.value) }
-    }
-
-    private fun getTokensByMetaplexCollectionAddress(
-        collectionAddress: String,
-        fromTokenAddress: String?
-    ): Flow<Token> {
-        return metaplexMetaRepository.findByCollectionAddress(collectionAddress, fromTokenAddress)
-            // TODO can be done with batch request
-            .mapNotNull { meta ->
-                tokenRepository.findByMint(meta.tokenAddress)
-            }
-    }
-
-    private fun getTokensByOffChainCollectionHash(
-        offChainCollectionHash: String,
-        fromTokenAddress: String?,
-    ): Flow<Token> {
-        return metaplexOffChainMetaRepository.findByOffChainCollectionHash(offChainCollectionHash, fromTokenAddress)
-            .mapNotNull { tokenOffChainCollection ->
-                tokenRepository.findByMint(tokenOffChainCollection.tokenAddress)
-            }
     }
 
     suspend fun getTokensWithMetaByCollection(

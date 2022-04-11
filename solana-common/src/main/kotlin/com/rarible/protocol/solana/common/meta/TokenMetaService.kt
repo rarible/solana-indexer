@@ -10,13 +10,13 @@ import com.rarible.protocol.solana.common.model.TokenId
 import com.rarible.protocol.solana.common.model.TokenWithMeta
 import com.rarible.protocol.solana.common.repository.MetaplexMetaRepository
 import com.rarible.protocol.solana.common.repository.MetaplexOffChainMetaRepository
-import com.rarible.protocol.solana.common.repository.TokenRepository
 import com.rarible.protocol.solana.common.service.CollectionService
 import com.rarible.protocol.solana.common.update.CollectionEventListener
 import com.rarible.protocol.solana.common.update.MetaplexMetaUpdateListener
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -29,7 +29,6 @@ import org.springframework.stereotype.Component
 class TokenMetaService(
     private val metaplexMetaRepository: MetaplexMetaRepository,
     private val metaplexOffChainMetaRepository: MetaplexOffChainMetaRepository,
-    private val tokenRepository: TokenRepository,
     private val metaplexOffChainMetaLoader: MetaplexOffChainMetaLoader,
     private val collectionService: CollectionService,
     private val collectionEventListener: CollectionEventListener,
@@ -63,21 +62,33 @@ class TokenMetaService(
 
     suspend fun extendWithAvailableMeta(tokens: Flow<Token>): Flow<TokenWithMeta> {
         val tokenMap = tokens.toList().associateBy { it.mint }
-        val offChainMetaMap = getOffChainMeta(tokenMap.keys)
-            .map { it.tokenAddress to it.metaFields }
-            .toList().toMap()
+        return getTokenIdToMetaMapByTokenIds(tokenMap.keys)
+            .map { (tokenAddress, tokenMeta) ->
+                TokenWithMeta(tokenMap[tokenAddress]!!, tokenMeta)
+            }
+    }
 
-        val result = getOnChainMeta(tokenMap.keys)
+    suspend fun extendBalancesWithAvailableMeta(balances: Flow<Balance>): Flow<BalanceWithMeta> {
+        val balanceList = balances.toList()
+        val balanceMints = balanceList.map { it.mint }.toSet()
+        val balanceMap = getTokenIdToMetaMapByTokenIds(balanceMints).toList().toMap()
+
+        return balanceList.map { balance ->
+            BalanceWithMeta(balance, balanceMap[balance.mint])
+        }.asFlow()
+    }
+
+    private suspend fun getTokenIdToMetaMapByTokenIds(mints: Collection<TokenId>): Flow<Pair<String, TokenMeta>> {
+        val offChainMetaMap = getOffChainMeta(mints)
+            .toTokenAddressOffChainMetaMap()
+
+        return getOnChainMeta(mints)
             .map { metaplexMeta ->
                 metaplexMeta.tokenAddress to TokenMetaParser.mergeOnChainAndOffChainMeta(
                     onChainMeta = metaplexMeta.metaFields,
                     offChainMeta = offChainMetaMap[metaplexMeta.tokenAddress],
                 )
             }
-            .map { (tokenAddress, tokenMeta) ->
-                TokenWithMeta(tokenMap[tokenAddress]!!, tokenMeta)
-            }
-        return result
     }
 
     suspend fun getTokensMetaByCollection(collection: String, fromTokenAddress: String?): Map<String, TokenMeta> {

@@ -6,7 +6,6 @@ import com.rarible.protocol.solana.common.model.BalanceWithMeta
 import com.rarible.protocol.solana.common.repository.BalanceRepository
 import com.rarible.protocol.solana.nft.api.exceptions.EntityNotFoundApiException
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -28,19 +27,31 @@ class BalanceApiService(
         return tokenMetaService.extendWithAvailableMeta(balances.first())
     }
 
-    fun getBalanceWithMetaByOwner(owner: String, continuation: DateIdContinuation?, limit: Int): Flow<BalanceWithMeta> =
-        balanceRepository.findByOwner(
+    suspend fun getBalanceWithMetaByOwner(
+        owner: String,
+        continuation: DateIdContinuation?,
+        limit: Int,
+    ): Flow<BalanceWithMeta> {
+        val balanceFlow = balanceRepository.findByOwner(
             owner,
             continuation,
             limit,
             false
-        ).map { tokenMetaService.extendWithAvailableMeta(it) }
+        )
+        return tokenMetaService.extendBalancesWithAvailableMeta(balanceFlow)
+    }
 
-    fun getBalanceWithMetaByMint(mint: String, continuation: DateIdContinuation?, limit: Int): Flow<BalanceWithMeta> =
-        balanceRepository.findByMint(
+    suspend fun getBalanceWithMetaByMint(
+        mint: String,
+        continuation: DateIdContinuation?,
+        limit: Int,
+    ): Flow<BalanceWithMeta> {
+        val balanceFlow = balanceRepository.findByMint(
             mint,
             continuation,
             limit,
             false
-        ).map { tokenMetaService.extendWithAvailableMeta(it) }
+        )
+        return tokenMetaService.extendBalancesWithAvailableMeta(balanceFlow)
+    }
 }
