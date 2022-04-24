@@ -1,97 +1,54 @@
 package com.rarible.protocol.solana.nft.api.service
 
 import com.rarible.protocol.solana.common.continuation.DateIdContinuation
-import com.rarible.protocol.solana.common.meta.TokenMetaService
 import com.rarible.protocol.solana.common.model.Token
-import com.rarible.protocol.solana.common.model.TokenWithMeta
-import com.rarible.protocol.solana.common.repository.MetaplexMetaRepository
-import com.rarible.protocol.solana.common.repository.MetaplexOffChainMetaRepository
 import com.rarible.protocol.solana.common.repository.TokenRepository
 import com.rarible.protocol.solana.common.util.RoyaltyDistributor
 import com.rarible.protocol.solana.dto.RoyaltyDto
 import com.rarible.protocol.solana.nft.api.exceptions.EntityNotFoundApiException
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapNotNull
 import org.springframework.stereotype.Component
 import java.time.Instant
 
 @Component
 class TokenApiService(
-    private val tokenRepository: TokenRepository,
-    private val tokenMetaService: TokenMetaService,
-    private val metaplexMetaRepository: MetaplexMetaRepository,
-    private val metaplexOffChainMetaRepository: MetaplexOffChainMetaRepository
+    private val tokenRepository: TokenRepository
 ) {
 
     suspend fun findAll(
         lastUpdatedFrom: Instant?,
         lastUpdatedTo: Instant?,
         continuation: DateIdContinuation?, limit: Int
-    ): Flow<TokenWithMeta> {
-        val tokens = tokenRepository.findAll(
-            lastUpdatedFrom,
-            lastUpdatedTo,
-            continuation,
-            limit
-        )
-        return tokenMetaService.extendWithAvailableMeta(tokens)
-    }
+    ): Flow<Token> = tokenRepository.findAll(
+        lastUpdatedFrom = lastUpdatedFrom,
+        lastUpdatedTo = lastUpdatedTo,
+        continuation = continuation,
+        limit = limit
+    )
 
-    suspend fun getTokensWithMeta(tokenAddresses: List<String>): Flow<TokenWithMeta> {
-        val tokens = tokenRepository.findByMints(tokenAddresses)
+    suspend fun getTokens(mints: List<String>): Flow<Token> =
+        tokenRepository.findByMints(mints)
 
-        return tokenMetaService.extendWithAvailableMeta(tokens)
-    }
-
-    suspend fun getTokenWithMeta(tokenAddress: String): TokenWithMeta {
-        val token = tokenRepository.findByMint(tokenAddress)
-            ?: throw EntityNotFoundApiException("Token", tokenAddress)
-        val tokenWithMeta = tokenMetaService.extendWithAvailableMeta(token).takeIf { it.hasMeta }
-        return tokenWithMeta ?: throw EntityNotFoundApiException("Meta", tokenAddress)
-    }
+    suspend fun getToken(tokenAddress: String): Token = tokenRepository.findByMint(tokenAddress)
+        ?: throw EntityNotFoundApiException("Token", tokenAddress)
 
     suspend fun getTokenRoyalties(tokenAddress: String): List<RoyaltyDto> {
-        val meta = tokenMetaService.getOnChainMeta(tokenAddress) ?: return emptyList()
-        val creators = meta.metaFields.creators.associateBy({ it.address }, { it.share })
+        val tokenMeta = getToken(tokenAddress).tokenMeta ?: throw EntityNotFoundApiException("Token", tokenAddress)
+        val creators = tokenMeta.creators.associateBy({ it.address }, { it.share })
 
         return RoyaltyDistributor.distribute(
-            meta.metaFields.sellerFeeBasisPoints,
-            creators
+            sellerFeeBasisPoints = tokenMeta.sellerFeeBasisPoints,
+            creators = creators
         ).map { RoyaltyDto(it.key, it.value) }
     }
 
-    private fun getTokensByMetaplexCollectionAddress(
-        collectionAddress: String,
-        fromTokenAddress: String?,
-        limit: Int
-    ): Flow<Token> {
-        return metaplexMetaRepository.findByCollectionAddress(collectionAddress, fromTokenAddress, limit)
-            // TODO can be done with batch request
-            .mapNotNull { meta ->
-                tokenRepository.findByMint(meta.tokenAddress)
-            }
-    }
-
-    private fun getTokensByOffChainCollectionHash(
-        offChainCollectionHash: String,
-        fromTokenAddress: String?,
-        limit: Int
-    ): Flow<Token> {
-        return metaplexOffChainMetaRepository.findByOffChainCollectionHash(offChainCollectionHash, fromTokenAddress, limit)
-            .mapNotNull { tokenOffChainCollection ->
-                tokenRepository.findByMint(tokenOffChainCollection.tokenAddress)
-            }
-    }
-
-    suspend fun getTokensWithMetaByCollection(
+    suspend fun getTokensByCollection(
         collection: String,
         continuation: String?,
         limit: Int,
-    ): Flow<TokenWithMeta> {
-        val metas = tokenMetaService.getTokensMetaByCollection(collection, continuation, limit)
-        val tokens = tokenRepository.findByMints(metas.keys)
-
-        return tokens.map { TokenWithMeta(it, metas[it.mint]) }
-    }
+    ): Flow<Token> = tokenRepository.findByCollection(
+        collection = collection,
+        continuation = continuation,
+        limit = limit
+    )
 }

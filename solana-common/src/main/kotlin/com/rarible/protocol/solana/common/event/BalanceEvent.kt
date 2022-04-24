@@ -1,6 +1,7 @@
 package com.rarible.protocol.solana.common.event
 
 import com.rarible.blockchain.scanner.solana.model.SolanaLog
+import com.rarible.protocol.solana.common.records.SolanaBalanceUpdateInstruction
 import java.math.BigInteger
 import java.time.Instant
 
@@ -41,4 +42,14 @@ data class BalanceOutcomeEvent(
     override val log: SolanaLog
 ) : BalanceEvent() {
     override fun invert() = BalanceIncomeEvent(timestamp, account, reversed, amount, log)
+}
+
+data class BalanceInternalUpdateEvent(
+    val instruction: SolanaBalanceUpdateInstruction,
+    override val account: String,
+    override val timestamp: Instant,
+    override val log: SolanaLog,
+    override val reversed: Boolean,
+) : BalanceEvent() {
+    override fun invert() = this
 }

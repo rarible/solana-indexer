@@ -7,6 +7,7 @@ import com.rarible.protocol.solana.nft.listener.consumer.LogRecordEventListener
 import com.rarible.protocol.solana.nft.listener.consumer.SolanaLogRecordEvent
 import com.rarible.protocol.solana.common.records.SolanaMetaRecord
 import com.rarible.protocol.solana.common.records.SubscriberGroup
+import com.rarible.protocol.solana.nft.listener.update.MetaUpdateService
 import org.springframework.stereotype.Component
 
 @Component

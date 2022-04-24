@@ -24,9 +24,6 @@ import java.math.BigDecimal
 
 class OrderRepositoryIt : AbstractIntegrationTest() {
 
-    @Autowired
-    lateinit var orderRepository: OrderRepository
-
     @Test
     fun `save and find by id`() = runBlocking<Unit> {
         val order = randomSellOrder()

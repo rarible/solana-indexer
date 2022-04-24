@@ -1,12 +1,9 @@
-package com.rarible.protocol.solana.nft.listener.service.order
+package com.rarible.protocol.solana.nft.listener.update
 
-import com.rarible.blockchain.scanner.framework.data.LogRecordEvent
-import com.rarible.blockchain.scanner.publisher.LogRecordEventPublisher
 import com.rarible.protocol.solana.common.model.Balance
 import com.rarible.protocol.solana.common.model.OrderStatus
 import com.rarible.protocol.solana.common.records.SolanaAuctionHouseOrderRecord
 import com.rarible.protocol.solana.common.records.SolanaOrderUpdateInstruction
-import com.rarible.protocol.solana.common.records.SubscriberGroup
 import com.rarible.protocol.solana.common.repository.OrderRepository
 import kotlinx.coroutines.flow.toList
 import org.slf4j.LoggerFactory
@@ -19,7 +16,7 @@ import org.springframework.stereotype.Component
 @Component
 class OrderMakeStockBalanceUpdateService(
     private val orderRepository: OrderRepository,
-    private val logRecordEventPublisher: LogRecordEventPublisher,
+    private val internalUpdateEventService: InternalUpdateEventService
 ) {
     private val logger = LoggerFactory.getLogger(OrderMakeStockBalanceUpdateService::class.java)
 
@@ -34,21 +31,15 @@ class OrderMakeStockBalanceUpdateService(
         }
 
         logger.info("Publishing {} order updates for balance {}", orders.size, balance)
-        val events = orders.map { order ->
-            val fakeBalanceUpdateRecord = SolanaAuctionHouseOrderRecord.InternalOrderUpdateRecord(
+        val records = orders.map { order ->
+            SolanaAuctionHouseOrderRecord.InternalOrderUpdateRecord(
                 mint = balance.mint,
                 timestamp = balance.updatedAt, // This TS taken from record event
                 auctionHouse = order.auctionHouse,
                 orderId = order.id,
                 instruction = SolanaOrderUpdateInstruction.BalanceUpdate(balance.account)
             )
-            LogRecordEvent(fakeBalanceUpdateRecord, false)
         }
-
-        logRecordEventPublisher.publish(
-            groupId = SubscriberGroup.AUCTION_HOUSE_ORDER.id,
-            logRecordEvents = events
-        )
-
+        internalUpdateEventService.sendInternalOrderUpdateRecords(records)
     }
 }

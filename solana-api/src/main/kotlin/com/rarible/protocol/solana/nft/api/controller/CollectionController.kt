@@ -44,21 +44,23 @@ class CollectionController(
          * For example, SDK creates an empty collection and wants to mint some items to it.
          */
         val tokenAsCollection = try {
-            tokenApiService.getTokenWithMeta(collection)
+            tokenApiService.getToken(collection)
         } catch (e: EntityNotFoundApiException) {
             null
-        }?.takeIf { it.hasMeta } ?: throw EntityNotFoundApiException("Collection", collection)
+        }?.takeIf { it.tokenMeta != null } ?: throw EntityNotFoundApiException("Collection", collection)
 
         return ResponseEntity.ok(
             collectionConverter.convertV2(
-                collection = SolanaCollectionV2(tokenAsCollection.token.id),
+                collection = SolanaCollectionV2(tokenAsCollection.id),
                 tokenMeta = tokenAsCollection.tokenMeta!!
             )
         )
     }
 
     override suspend fun getCollectionsByOwner(
-        owner: String, continuation: String?, size: Int?
+        owner: String,
+        continuation: String?,
+        size: Int?
     ): ResponseEntity<CollectionsDto> {
         // TODO implement
         return ResponseEntity.ok(CollectionsDto())

@@ -10,8 +10,8 @@ import com.rarible.core.test.ext.KafkaTest
 import com.rarible.core.test.ext.MongoCleanup
 import com.rarible.core.test.ext.MongoTest
 import com.rarible.core.test.ext.RedisTest
-import com.rarible.protocol.solana.common.meta.MetaplexOffChainMetaLoadService
 import com.rarible.protocol.solana.common.meta.MetaplexOffChainMetaLoader
+import com.rarible.protocol.solana.common.meta.TokenMetaGetService
 import com.rarible.protocol.solana.common.meta.TokenMetaService
 import com.rarible.protocol.solana.common.repository.BalanceRepository
 import com.rarible.protocol.solana.common.repository.MetaplexMetaRepository
@@ -81,7 +81,7 @@ abstract class AbstractBlockScannerTest {
     protected lateinit var tokenMetaService: TokenMetaService
 
     @Autowired
-    protected lateinit var metaplexOffChainMetaLoadService: MetaplexOffChainMetaLoadService
+    protected lateinit var tokenMetaGetService: TokenMetaGetService
 
     @Qualifier("test.solana.meta.loader")
     @Autowired
@@ -126,7 +126,6 @@ abstract class AbstractBlockScannerTest {
         clearMocks(metaplexOffChainMetaRepository)
         coJustRun { metaplexOffChainMetaRepository.createIndexes() }
         coEvery { metaplexOffChainMetaRepository.findByTokenAddress(any()) } returns null
-        coEvery { metaplexOffChainMetaRepository.findByOffChainCollectionHash(any()) } returns emptyFlow()
         coEvery { metaplexOffChainMetaRepository.save(any()) } throws (UnsupportedOperationException())
     }
 

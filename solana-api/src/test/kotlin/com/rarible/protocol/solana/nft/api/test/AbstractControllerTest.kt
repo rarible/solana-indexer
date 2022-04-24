@@ -7,15 +7,7 @@ import com.rarible.protocol.solana.api.client.OrderControllerApi
 import com.rarible.protocol.solana.api.client.SolanaNftIndexerApiClientFactory
 import com.rarible.protocol.solana.api.client.TokenControllerApi
 import com.rarible.protocol.solana.common.meta.MetaplexOffChainMetaLoader
-import com.rarible.protocol.solana.common.meta.TokenMeta
-import com.rarible.protocol.solana.common.meta.TokenMetaParser
-import com.rarible.protocol.solana.common.model.MetaplexMeta
-import com.rarible.protocol.solana.common.model.MetaplexOffChainMeta
-import com.rarible.protocol.solana.common.model.TokenId
 import com.rarible.protocol.solana.common.repository.MetaplexMetaRepository
-import com.rarible.protocol.solana.common.repository.MetaplexOffChainMetaRepository
-import com.rarible.protocol.solana.test.createRandomMetaplexMeta
-import com.rarible.protocol.solana.test.createRandomMetaplexOffChainMeta
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import java.net.URI
@@ -30,9 +22,6 @@ abstract class AbstractControllerTest : AbstractIntegrationTest() {
     @Autowired
     lateinit var metaplexMetaRepository: MetaplexMetaRepository
 
-    @Autowired
-    lateinit var metaplexOffChainMetaRepository: MetaplexOffChainMetaRepository
-
     protected lateinit var tokenControllerApi: TokenControllerApi
 
     protected lateinit var balanceControllerApi: BalanceControllerApi
@@ -46,26 +35,5 @@ abstract class AbstractControllerTest : AbstractIntegrationTest() {
         tokenControllerApi = clientFactory.createTokenControllerApiClient()
         balanceControllerApi = clientFactory.createBalanceControllerApiClient()
         orderControllerApi = clientFactory.createOrderControllerApiClient()
-    }
-
-    suspend fun saveRandomMetaplexOnChainAndOffChainMeta(
-        tokenAddress: TokenId,
-        metaplexMetaCustomizer: MetaplexMeta.() -> MetaplexMeta = { this },
-        metaplexOffChainMetaCustomizer: MetaplexOffChainMeta.() -> MetaplexOffChainMeta = { this }
-    ): TokenMeta {
-        val metaplexMeta = createRandomMetaplexMeta().copy(
-            tokenAddress = tokenAddress
-        ).metaplexMetaCustomizer()
-        val metaplexOffChainMeta = createRandomMetaplexOffChainMeta().copy(
-            tokenAddress = tokenAddress
-        ).metaplexOffChainMetaCustomizer()
-
-        metaplexMetaRepository.save(metaplexMeta)
-        metaplexOffChainMetaRepository.save(metaplexOffChainMeta)
-
-        return TokenMetaParser.mergeOnChainAndOffChainMeta(
-            metaplexMeta.metaFields,
-            metaplexOffChainMeta.metaFields
-        )
     }
 }

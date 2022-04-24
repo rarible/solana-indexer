@@ -1,4 +1,4 @@
-package com.rarible.protocol.solana.nft.listener.service.order
+package com.rarible.protocol.solana.nft.listener.update
 
 import com.rarible.core.test.data.randomString
 import com.rarible.protocol.solana.common.model.Asset
@@ -23,7 +23,7 @@ import java.time.Instant
 
 class OrderUpdateServiceIt : AbstractBlockScannerTest() {
 
-    lateinit var orderUpdateService: OrderUpdateService
+    private lateinit var orderUpdateService: OrderUpdateService
 
     private val orderUpdateListener: OrderUpdateListener = mockk()
 

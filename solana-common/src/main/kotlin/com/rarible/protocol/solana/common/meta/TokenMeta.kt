@@ -11,7 +11,7 @@ data class TokenMeta(
     val description: String?,
     val creators: List<MetaplexTokenCreator>,
     val collection: Collection?,
-    val sellerFeeBasisPoints: Int?,
+    val sellerFeeBasisPoints: Int,
     val url: String,
     val attributes: List<Attribute>?,
     val contents: List<Content>,
@@ -41,15 +41,20 @@ data class TokenMeta(
     )
 
     sealed class Collection {
+        // Nullable to preserve compatibility.
+        abstract val id: String?
+
         data class OnChain(
             val address: String,
-            val verified: Boolean
+            val verified: Boolean,
+            override val id: String? = address
         ) : Collection()
 
         data class OffChain(
             val name: String,
             val family: String?,
-            val hash: String
+            val hash: String,
+            override val id: String? = hash
         ) : Collection()
     }
 }

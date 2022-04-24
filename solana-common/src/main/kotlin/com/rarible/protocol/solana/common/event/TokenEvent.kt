@@ -1,6 +1,7 @@
 package com.rarible.protocol.solana.common.event
 
 import com.rarible.blockchain.scanner.solana.model.SolanaLog
+import com.rarible.protocol.solana.common.records.SolanaTokenUpdateInstruction
 import java.math.BigInteger
 import java.time.Instant
 
@@ -52,4 +53,14 @@ data class BurnEvent(
         timestamp = timestamp,
         amount = amount
     )
+}
+
+data class TokenInternalUpdateEvent(
+    override val log: SolanaLog,
+    override val reversed: Boolean,
+    override val token: String,
+    override val timestamp: Instant,
+    val instruction: SolanaTokenUpdateInstruction
+) : TokenEvent() {
+    override fun invert(): TokenEvent = this
 }

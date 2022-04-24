@@ -212,7 +212,8 @@ class MetaplexMetaTest : EventAwareBlockScannerTest() {
             )
         } returns metaplexOffChainMeta
 
-        metaplexOffChainMetaLoadService.loadOffChainTokenMeta(token.mint)
+        // TODO: rework.
+//        metaplexOffChainMetaLoadService.loadOffChainTokenMeta(token.mint)
 
         // On-chain collection takes precedence.
         val onChainCollection = TokenMeta.Collection.OnChain(

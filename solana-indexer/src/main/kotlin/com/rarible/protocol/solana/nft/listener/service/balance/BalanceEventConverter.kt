@@ -4,6 +4,7 @@ import com.rarible.protocol.solana.common.event.BalanceEvent
 import com.rarible.protocol.solana.common.event.BalanceIncomeEvent
 import com.rarible.protocol.solana.common.event.BalanceInitializeAccountEvent
 import com.rarible.protocol.solana.common.event.BalanceOutcomeEvent
+import com.rarible.protocol.solana.common.event.BalanceInternalUpdateEvent
 import com.rarible.protocol.solana.common.records.SolanaBalanceRecord
 import org.springframework.stereotype.Component
 
@@ -57,6 +58,15 @@ class BalanceEventConverter {
                 mint = record.mint,
                 log = record.log,
                 timestamp = record.timestamp
+            )
+        )
+        is SolanaBalanceRecord.InternalBalanceUpdateRecord -> listOf(
+            BalanceInternalUpdateEvent(
+                instruction = record.instruction,
+                account = record.account,
+                timestamp = record.timestamp,
+                log = record.log,
+                reversed = reversed
             )
         )
     }

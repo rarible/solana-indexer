@@ -13,7 +13,6 @@ import com.rarible.protocol.solana.common.meta.TokenMeta
 import com.rarible.protocol.solana.common.model.Asset
 import com.rarible.protocol.solana.common.model.AssetType
 import com.rarible.protocol.solana.common.model.Balance
-import com.rarible.protocol.solana.common.model.BalanceWithMeta
 import com.rarible.protocol.solana.common.model.MetaplexMeta
 import com.rarible.protocol.solana.common.model.MetaplexMetaFields
 import com.rarible.protocol.solana.common.model.MetaplexOffChainMeta
@@ -24,23 +23,22 @@ import com.rarible.protocol.solana.common.model.OrderStatus
 import com.rarible.protocol.solana.common.model.Token
 import com.rarible.protocol.solana.common.model.TokenFtAssetType
 import com.rarible.protocol.solana.common.model.TokenNftAssetType
-import com.rarible.protocol.solana.common.model.TokenWithMeta
 import com.rarible.protocol.solana.common.records.OrderDirection
 import java.math.BigInteger
 import java.time.Instant
 
-fun createRandomToken(mint: String = randomString()): Token = Token(
+fun createRandomToken(
+    mint: String = randomString(),
+    tokenMeta: TokenMeta? = createRandomTokenMeta(),
+    updatedAt: Instant = nowMillis()
+): Token = Token(
     mint = mint,
     supply = randomBigInt(),
     revertableEvents = emptyList(),
     decimals = randomInt(6),
-    createdAt = nowMillis(),
-    updatedAt = nowMillis(),
-)
-
-fun createRandomTokenWithMeta(): TokenWithMeta = TokenWithMeta(
-    token = createRandomToken(),
-    tokenMeta = createRandomTokenMeta()
+    createdAt = updatedAt,
+    updatedAt = updatedAt,
+    tokenMeta = tokenMeta
 )
 
 fun createRandomMetaplexMeta(
@@ -55,8 +53,10 @@ fun createRandomMetaplexMeta(
     updatedAt = nowMillis()
 )
 
-fun createRandomMetaplexOffChainMeta(): MetaplexOffChainMeta = MetaplexOffChainMeta(
-    tokenAddress = randomString(),
+fun createRandomMetaplexOffChainMeta(
+    mint: String = randomString()
+): MetaplexOffChainMeta = MetaplexOffChainMeta(
+    tokenAddress = mint,
     metaFields = createRandomMetaplexOffChainMetaFields(),
     loadedAt = nowMillis()
 )
@@ -112,15 +112,19 @@ fun createRandomMetaplexOffChainMetaFields(): MetaplexOffChainMetaFields {
     )
 }
 
-fun createRandomTokenMeta(): TokenMeta =
+fun createRandomTokenMeta(
+    collection: TokenMeta.Collection = createRandomTokenMetaCollection(),
+    creators: List<MetaplexTokenCreator> = listOf(createRandomTokenCreator()),
+    sellerFeeBasisPoints: Int = randomInt()
+): TokenMeta =
     TokenMeta(
         name = randomString(),
         description = randomString(),
         symbol = randomString(),
         url = randomUrl(),
-        creators = listOf(createRandomTokenCreator()),
-        sellerFeeBasisPoints = randomInt(),
-        collection = createRandomTokenMetadataCollection(),
+        creators = creators,
+        sellerFeeBasisPoints = sellerFeeBasisPoints,
+        collection = collection,
         attributes = listOf(createRandomTokenMetaAttribute()),
         contents = listOf(createRandomTokenMetaContent()),
         externalUrl = randomUrl()
@@ -147,19 +151,23 @@ fun createRandomTokenMetaAttribute(): TokenMeta.Attribute =
         format = null
     )
 
-fun createRandomTokenMetadataCollection(): TokenMeta.Collection =
+fun createRandomTokenMetaCollection(): TokenMeta.Collection =
     if (randomBoolean()) {
-        TokenMeta.Collection.OnChain(
-            address = randomString(),
-            verified = randomBoolean()
-        )
+        createRandomTokenMetaCollectionOnChain()
     } else {
-        TokenMeta.Collection.OffChain(
-            name = randomString(),
-            family = randomString(),
-            hash = randomString()
-        )
+        createRandomTokenMetaCollectionOffChain()
     }
+
+fun createRandomTokenMetaCollectionOffChain() = TokenMeta.Collection.OffChain(
+    name = randomString(),
+    family = randomString(),
+    hash = randomString()
+)
+
+fun createRandomTokenMetaCollectionOnChain() = TokenMeta.Collection.OnChain(
+    address = randomString(),
+    verified = randomBoolean()
+)
 
 fun createRandomMetaplexMetaFieldsCollection(): MetaplexMetaFields.Collection =
     MetaplexMetaFields.Collection(
@@ -187,17 +195,9 @@ fun createRandomBalance(
     value = value,
     revertableEvents = emptyList(),
     createdAt = nowMillis(),
-    updatedAt = updatedAt
-)
-
-fun createRandomBalanceWithMeta(
-    account: String = randomString(),
-    owner: String = randomString(),
-    mint: String = randomString(),
-    updatedAt: Instant = nowMillis()
-): BalanceWithMeta = BalanceWithMeta(
-    balance = createRandomBalance(account = account, owner = owner, mint = mint, updatedAt = updatedAt),
-    tokenMeta = createRandomTokenMeta()
+    updatedAt = updatedAt,
+    tokenName = randomString(),
+    collection = createRandomTokenMetaCollection()
 )
 
 fun randomUrl(): String = "https://test.com/" + randomString()

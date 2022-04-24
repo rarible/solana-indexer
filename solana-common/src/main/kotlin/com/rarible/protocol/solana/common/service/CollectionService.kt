@@ -1,5 +1,6 @@
 package com.rarible.protocol.solana.common.service
 
+import com.rarible.protocol.solana.common.meta.TokenMeta
 import com.rarible.protocol.solana.common.model.MetaplexMeta
 import com.rarible.protocol.solana.common.model.MetaplexOffChainMeta
 import com.rarible.protocol.solana.common.model.SolanaCollection
@@ -29,31 +30,23 @@ class CollectionService(
         return collectionRepository.findAll(fromId, limit).toList()
     }
 
-    suspend fun updateCollectionV1(
-        offChainMeta: MetaplexOffChainMeta
-    ): SolanaCollectionV1? {
-        val collection = offChainMeta.metaFields.collection ?: return null
-        val exist = findById(collection.hash)
-        if (exist != null) {
-            return null
-        }
-
-        logger.info("Saved SolanaCollection: {}", collection)
-        return save(
-            SolanaCollectionV1(
-                id = collection.hash,
-                name = collection.name,
-                family = collection.family
+    suspend fun updateCollection(tokenMetaCollection: TokenMeta.Collection?): SolanaCollection? {
+        val solanaCollection = when (tokenMetaCollection) {
+            is TokenMeta.Collection.OffChain -> SolanaCollectionV1(
+                id = tokenMetaCollection.hash,
+                name = tokenMetaCollection.name,
+                family = tokenMetaCollection.family
             )
-        ) as SolanaCollectionV1
-    }
-
-    suspend fun updateCollectionV2(meta: MetaplexMeta): SolanaCollection? {
-        val collectionAddress = meta.metaFields.collection?.address ?: return null
-        val exist = findById(collectionAddress)
-        if (exist != null) {
+            is TokenMeta.Collection.OnChain -> SolanaCollectionV2(
+                id = tokenMetaCollection.address
+            )
+            null -> return null
+        }
+        val existing = findById(solanaCollection.id)
+        if (existing != null) {
             return null
         }
-        return save(SolanaCollectionV2(collectionAddress))
+        logger.info("Saved collection ${solanaCollection.id}")
+        return save(solanaCollection)
     }
 }

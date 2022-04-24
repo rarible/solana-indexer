@@ -20,12 +20,6 @@ class CollectionConverterIt : AbstractIntegrationTest() {
     @Autowired
     lateinit var collectionConverter: CollectionConverter
 
-    @Autowired
-    lateinit var metaplexMetaRepository: MetaplexMetaRepository
-
-    @Autowired
-    lateinit var metaplexOffChainMetaRepository: MetaplexOffChainMetaRepository
-
     @Test
     fun `to dto - f1`() = runBlocking<Unit> {
         val collection = SolanaCollectionV1(randomString(), randomString(), randomString())

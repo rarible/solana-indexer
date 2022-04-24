@@ -134,6 +134,7 @@ class SolanaRecordsLogEventFilter(
                 }
                 is SolanaBalanceRecord.BurnRecord -> Unit
                 is SolanaBalanceRecord.MintToRecord -> Unit
+                is SolanaBalanceRecord.InternalBalanceUpdateRecord -> Unit
                 is SolanaAuctionHouseOrderRecord -> when (record) {
                     is SolanaAuctionHouseOrderRecord.BuyRecord -> {
                         accounts.addRib(record.tokenAccount, record.tokenAccount)
@@ -175,7 +176,12 @@ class SolanaRecordsLogEventFilter(
 
     private fun filterTokenRecord(
         record: SolanaTokenRecord
-    ) = keepIfNft(record, record.mint)
+    ): SolanaBaseLogRecord? {
+        if (record is SolanaTokenRecord.InternalTokenUpdateRecord) {
+            return null
+        }
+        return keepIfNft(record, record.mint)
+    }
 
     private fun filterBalanceRecord(
         record: SolanaBalanceRecord,
@@ -194,6 +200,7 @@ class SolanaRecordsLogEventFilter(
             updateMint = { record.copy(mint = it) }
         )
         is SolanaBalanceRecord.InitializeBalanceAccountRecord -> keepIfNft(record, record.mint)
+        is SolanaBalanceRecord.InternalBalanceUpdateRecord -> null
     }
 
     private fun filterAuctionHouseRecord(

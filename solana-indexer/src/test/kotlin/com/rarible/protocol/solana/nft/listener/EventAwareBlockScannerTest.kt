@@ -2,15 +2,13 @@ package com.rarible.protocol.solana.nft.listener
 
 import com.rarible.core.kafka.RaribleKafkaConsumer
 import com.rarible.core.test.wait.Wait
-import com.rarible.protocol.solana.common.converter.BalanceWithMetaConverter
+import com.rarible.protocol.solana.common.converter.BalanceConverter
 import com.rarible.protocol.solana.common.converter.TokenMetaConverter
-import com.rarible.protocol.solana.common.converter.TokenWithMetaConverter
+import com.rarible.protocol.solana.common.converter.TokenConverter
 import com.rarible.protocol.solana.common.meta.TokenMeta
 import com.rarible.protocol.solana.common.model.Balance
-import com.rarible.protocol.solana.common.model.BalanceWithMeta
 import com.rarible.protocol.solana.common.model.MetaplexTokenCreator
 import com.rarible.protocol.solana.common.model.Token
-import com.rarible.protocol.solana.common.model.TokenWithMeta
 import com.rarible.protocol.solana.dto.BalanceDeleteEventDto
 import com.rarible.protocol.solana.dto.BalanceDto
 import com.rarible.protocol.solana.dto.BalanceEventDto
@@ -66,7 +64,7 @@ abstract class EventAwareBlockScannerTest : AbstractBlockScannerTest() {
         Assertions.assertThat(tokenEvents).anySatisfy { event ->
             Assertions.assertThat(event).isInstanceOfSatisfying(TokenUpdateEventDto::class.java) {
                 Assertions.assertThat(it.address).isEqualTo(token.mint)
-                assertTokenDtoEqual(it.token, TokenWithMetaConverter.convert(TokenWithMeta(token, tokenMeta)))
+                assertTokenDtoEqual(it.token, TokenConverter.convert(token))
             }
         }
     }
@@ -86,7 +84,7 @@ abstract class EventAwareBlockScannerTest : AbstractBlockScannerTest() {
                 }
                 assertBalanceDtoEqual(
                     balanceDto,
-                    BalanceWithMetaConverter.convert(BalanceWithMeta(balance, tokenMeta))
+                    BalanceConverter.convert(balance)
                 )
             }
         }
@@ -141,7 +139,7 @@ abstract class EventAwareBlockScannerTest : AbstractBlockScannerTest() {
         actualBalance: Balance?,
         expectedBalance: Balance
     ) {
-        // Ignore [revertableEvents] because they are minor and hard to get.
+        // Ignore [revert-able events] because they are minor and hard to get.
         fun Balance.ignore() = this
             .copy(createdAt = Instant.EPOCH)
             .copy(updatedAt = Instant.EPOCH)

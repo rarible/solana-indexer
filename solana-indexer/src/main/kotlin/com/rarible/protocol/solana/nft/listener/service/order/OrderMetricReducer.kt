@@ -24,7 +24,7 @@ class OrderMetricReducer(
             is OrderBuyEvent -> "auction_house_order_buy"
             is OrderSellEvent -> "auction_house_order_sell"
             is OrderCancelEvent -> "auction_house_order_cancel"
-            is InternalUpdateEvent -> "auction_house_order_balance_update"
+            is InternalUpdateEvent -> "auction_house_internal_update"
         }
     }
 }

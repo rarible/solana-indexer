@@ -9,6 +9,7 @@ import com.rarible.protocol.solana.common.update.ActivityEventListener
 import com.rarible.protocol.solana.nft.listener.consumer.LogRecordEventListener
 import com.rarible.protocol.solana.nft.listener.consumer.LogRecordEventListenerId
 import com.rarible.protocol.solana.nft.listener.consumer.SolanaLogRecordEvent
+import com.rarible.protocol.solana.nft.listener.update.OrderUpdateService
 import org.springframework.stereotype.Component
 
 @Component
