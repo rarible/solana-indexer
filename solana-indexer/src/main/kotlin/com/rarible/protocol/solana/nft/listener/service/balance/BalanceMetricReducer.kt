@@ -5,6 +5,7 @@ import com.rarible.protocol.solana.common.event.BalanceEvent
 import com.rarible.protocol.solana.common.event.BalanceIncomeEvent
 import com.rarible.protocol.solana.common.event.BalanceInitializeAccountEvent
 import com.rarible.protocol.solana.common.event.BalanceOutcomeEvent
+import com.rarible.protocol.solana.common.event.BalanceInternalUpdateEvent
 import com.rarible.protocol.solana.common.model.Balance
 import com.rarible.protocol.solana.nft.listener.service.AbstractMetricReducer
 import io.micrometer.core.instrument.MeterRegistry
@@ -21,6 +22,7 @@ class BalanceMetricReducer(
             is BalanceInitializeAccountEvent -> "initialize_account"
             is BalanceOutcomeEvent -> "transfer_from"
             is BalanceIncomeEvent -> "transfer_to"
+            is BalanceInternalUpdateEvent -> "internal_update"
         }
     }
 }

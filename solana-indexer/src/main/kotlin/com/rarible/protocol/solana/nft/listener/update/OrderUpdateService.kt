@@ -1,4 +1,4 @@
-package com.rarible.protocol.solana.nft.listener.service.order
+package com.rarible.protocol.solana.nft.listener.update
 
 import com.rarible.core.entity.reducer.service.EntityService
 import com.rarible.protocol.solana.common.model.Order
@@ -9,7 +9,6 @@ import com.rarible.protocol.solana.common.records.OrderDirection
 import com.rarible.protocol.solana.common.repository.BalanceRepository
 import com.rarible.protocol.solana.common.repository.OrderRepository
 import com.rarible.protocol.solana.common.update.OrderUpdateListener
-import kotlinx.coroutines.flow.firstOrNull
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.math.BigInteger
@@ -33,9 +32,9 @@ class OrderUpdateService(
         val updated = entity.checkForUpdates()
         val exist = orderRepository.findById(entity.id)
 
-        if (!requireUpdate(updated, exist)) {
+        if (!shouldUpdate(updated, exist)) {
             // Nothing changed in order record
-            logger.info("Order $entity not changed")
+            logger.info("Order $entity is not changed, skipping save")
             return entity
         }
 
@@ -85,7 +84,7 @@ class OrderUpdateService(
         )
     }
 
-    private fun requireUpdate(updated: Order, exist: Order?): Boolean {
+    private fun shouldUpdate(updated: Order, exist: Order?): Boolean {
         if (exist == null) return true
 
         // If nothing changed except updateAt, there is no sense to publish events

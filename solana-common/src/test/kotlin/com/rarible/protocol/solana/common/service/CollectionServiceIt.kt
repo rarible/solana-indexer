@@ -4,8 +4,8 @@ import com.rarible.core.test.data.randomString
 import com.rarible.protocol.solana.AbstractIntegrationTest
 import com.rarible.protocol.solana.common.model.SolanaCollectionV1
 import com.rarible.protocol.solana.common.model.SolanaCollectionV2
-import com.rarible.protocol.solana.test.createRandomMetaplexMeta
-import com.rarible.protocol.solana.test.createRandomMetaplexOffChainMeta
+import com.rarible.protocol.solana.test.createRandomTokenMetaCollectionOffChain
+import com.rarible.protocol.solana.test.createRandomTokenMetaCollectionOnChain
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -47,32 +47,24 @@ class CollectionServiceIt : AbstractIntegrationTest() {
 
     @Test
     fun `update collection v1 - new collection`() = runBlocking<Unit> {
-
-        val meta = createRandomMetaplexOffChainMeta()
-        val collection = meta.metaFields.collection!!
-
-        val expected = SolanaCollectionV1(
-            id = collection.hash,
-            name = collection.name,
-            family = collection.family,
-        )
-
-        collectionService.updateCollectionV1(meta)
+        val collection = createRandomTokenMetaCollectionOffChain()
+        collectionService.updateCollection(collection)
         val saved = collectionService.findById(collection.hash)
-
-        assertThat(saved).isEqualTo(expected)
+        assertThat(saved).isEqualTo(SolanaCollectionV1(collection.hash, collection.name, collection.family))
     }
 
     @Test
     fun `update collection v1 - collection exists`() = runBlocking<Unit> {
+        val collection = createRandomTokenMetaCollectionOffChain()
 
-        val meta = createRandomMetaplexOffChainMeta()
-        val collection = meta.metaFields.collection!!
-
-        val exists = SolanaCollectionV1(collection.hash, randomString(), randomString())
+        val exists = SolanaCollectionV1(
+            id = collection.hash,
+            name = randomString(),
+            family = randomString()
+        )
         collectionService.save(exists)
 
-        collectionService.updateCollectionV1(meta)
+        collectionService.updateCollection(collection)
         val saved = collectionService.findById(collection.hash)
 
         // Should not be updated
@@ -81,14 +73,12 @@ class CollectionServiceIt : AbstractIntegrationTest() {
 
     @Test
     fun `update collection v2`() = runBlocking<Unit> {
+        val collection = createRandomTokenMetaCollectionOnChain()
 
-        val meta = createRandomMetaplexMeta()
-        val collectionAddress = meta.metaFields.collection?.address!!
+        val expected = SolanaCollectionV2(collection.address)
 
-        val expected = SolanaCollectionV2(collectionAddress)
-
-        collectionService.updateCollectionV2(meta)
-        val saved = collectionService.findById(collectionAddress)
+        collectionService.updateCollection(collection)
+        val saved = collectionService.findById(collection.address)
 
         assertThat(saved).isEqualTo(expected)
     }

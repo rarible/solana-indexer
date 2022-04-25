@@ -1,7 +1,7 @@
 package com.rarible.protocol.solana.common.model
 
-import com.rarible.core.entity.reducer.model.Entity
 import com.rarible.protocol.solana.common.event.BalanceEvent
+import com.rarible.protocol.solana.common.meta.TokenMeta
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 import java.math.BigInteger
@@ -16,6 +16,16 @@ data class Balance(
     val owner: String,
     val mint: String,
     val value: BigInteger,
+    /**
+     * Denormalized name of the NFT taken from the Metaplex on-chain meta.
+     * It is set when the meta is fully loaded.
+     */
+    val tokenName: String?,
+    /**
+     * Denormalized collection of the NFT.
+     * It is set when the meta is fully loaded.
+     */
+    val collection: TokenMeta.Collection?,
     override val createdAt: Instant,
     override val updatedAt: Instant,
     override val revertableEvents: List<BalanceEvent>
@@ -36,6 +46,8 @@ data class Balance(
             account = account,
             owner = "",
             mint = "",
+            tokenName = null,
+            collection = null,
             value = BigInteger.ZERO,
             createdAt = Instant.EPOCH,
             updatedAt = Instant.EPOCH,

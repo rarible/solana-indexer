@@ -2,6 +2,7 @@ package com.rarible.protocol.solana.nft.listener.service.token
 
 import com.rarible.protocol.solana.common.event.BurnEvent
 import com.rarible.protocol.solana.common.event.InitializeMintEvent
+import com.rarible.protocol.solana.common.event.TokenInternalUpdateEvent
 import com.rarible.protocol.solana.common.event.MintEvent
 import com.rarible.protocol.solana.common.event.TokenEvent
 import com.rarible.protocol.solana.common.records.SolanaTokenRecord
@@ -38,6 +39,15 @@ class TokenEventConverter {
                 reversed = reversed,
                 token = record.mint,
                 timestamp = record.timestamp
+            )
+        )
+        is SolanaTokenRecord.InternalTokenUpdateRecord -> listOf(
+            TokenInternalUpdateEvent(
+                log = record.log,
+                reversed = reversed,
+                token = record.mint,
+                timestamp = record.timestamp,
+                instruction = record.instruction
             )
         )
     }

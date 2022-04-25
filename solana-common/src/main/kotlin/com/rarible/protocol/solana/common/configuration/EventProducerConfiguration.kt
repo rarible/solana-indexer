@@ -10,6 +10,7 @@ import com.rarible.protocol.solana.dto.CollectionEventDto
 import com.rarible.protocol.solana.dto.OrderEventDto
 import com.rarible.protocol.solana.dto.SolanaEventTopicProvider
 import com.rarible.protocol.solana.dto.TokenEventDto
+import com.rarible.protocol.solana.dto.TokenMetaEventDto
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
@@ -33,6 +34,16 @@ class EventProducerConfiguration(
             clientSuffix = "token",
             topic = tokenTopic,
             type = TokenEventDto::class.java
+        )
+    }
+
+    @Bean
+    fun tokenMetaEventProducer(): RaribleKafkaProducer<TokenMetaEventDto> {
+        val tokenMetaTopic = SolanaEventTopicProvider.getTokenMetaTopic(env)
+        return createSolanaProducer(
+            clientSuffix = "token.meta",
+            topic = tokenMetaTopic,
+            type = TokenMetaEventDto::class.java
         )
     }
 

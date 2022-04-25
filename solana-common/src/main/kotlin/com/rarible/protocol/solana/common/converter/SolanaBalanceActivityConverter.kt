@@ -31,6 +31,7 @@ class SolanaBalanceActivityConverter(
             is SolanaBalanceRecord.TransferIncomeRecord -> createTransferIncomeActivity(source, reverted)
             is SolanaBalanceRecord.TransferOutcomeRecord -> null
             is SolanaBalanceRecord.InitializeBalanceAccountRecord -> null
+            is SolanaBalanceRecord.InternalBalanceUpdateRecord -> null
         }
     }
 

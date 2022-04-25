@@ -15,9 +15,6 @@ import java.math.BigInteger
 
 class BalanceRepositoryIt : AbstractIntegrationTest() {
 
-    @Autowired
-    private lateinit var balanceRepository: BalanceRepository
-
     @Test
     fun `save and find by account`() = runBlocking<Unit> {
         val balance = balanceRepository.save(createRandomBalance())

@@ -4,8 +4,8 @@ import com.rarible.protocol.solana.api.controller.BalanceControllerApi
 import com.rarible.protocol.solana.common.continuation.BalanceContinuation
 import com.rarible.protocol.solana.common.continuation.DateIdContinuation
 import com.rarible.protocol.solana.common.continuation.Paging
-import com.rarible.protocol.solana.common.converter.BalanceWithMetaConverter
-import com.rarible.protocol.solana.common.model.BalanceWithMeta
+import com.rarible.protocol.solana.common.converter.BalanceConverter
+import com.rarible.protocol.solana.common.model.Balance
 import com.rarible.protocol.solana.dto.BalanceDto
 import com.rarible.protocol.solana.dto.BalancesDto
 import com.rarible.protocol.solana.nft.api.service.BalanceApiService
@@ -20,8 +20,8 @@ class BalanceController(
 ) : BalanceControllerApi {
 
     override suspend fun getBalanceByMintAndOwner(mint: String, owner: String): ResponseEntity<BalanceDto> {
-        val balanceWithMeta = balanceApiService.getBalanceWithMetaByMintAndOwner(mint, owner)
-        return ResponseEntity.ok(BalanceWithMetaConverter.convert(balanceWithMeta))
+        val balance = balanceApiService.getBalanceByMintAndOwner(mint, owner)
+        return ResponseEntity.ok(BalanceConverter.convert(balance))
     }
 
     override suspend fun getBalanceByOwner(
@@ -30,13 +30,12 @@ class BalanceController(
         size: Int?
     ): ResponseEntity<BalancesDto> {
         val safeSize = PageSize.BALANCE.limit(size)
-        val balancesWithMeta = balanceApiService.getBalanceWithMetaByOwner(
+        val balances = balanceApiService.getBalancesByOwner(
             owner,
             DateIdContinuation.parse(continuation),
             safeSize
         ).toList()
-
-        val dto = toSlice(balancesWithMeta, safeSize)
+        val dto = toSlice(balances, safeSize)
         return ResponseEntity.ok(dto)
     }
 
@@ -46,18 +45,17 @@ class BalanceController(
         size: Int?
     ): ResponseEntity<BalancesDto> {
         val safeSize = PageSize.BALANCE.limit(size)
-        val balancesWithMeta = balanceApiService.getBalanceWithMetaByMint(
+        val balances = balanceApiService.getBalancesByMint(
             mint,
             DateIdContinuation.parse(continuation),
             safeSize
         ).toList()
-
-        val dto = toSlice(balancesWithMeta, safeSize)
+        val dto = toSlice(balances, safeSize)
         return ResponseEntity.ok(dto)
     }
 
-    private fun toSlice(balances: List<BalanceWithMeta>, size: Int): BalancesDto {
-        val dto = balances.map { BalanceWithMetaConverter.convert(it) }
+    private fun toSlice(balances: List<Balance>, size: Int): BalancesDto {
+        val dto = balances.map { BalanceConverter.convert(it) }
         val continuationFactory = BalanceContinuation.ByLastUpdatedAndId
 
         val slice = Paging(continuationFactory, dto).getSlice(size)

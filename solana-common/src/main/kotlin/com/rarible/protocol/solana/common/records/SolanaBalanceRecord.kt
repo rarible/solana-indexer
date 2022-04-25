@@ -65,4 +65,18 @@ sealed class SolanaBalanceRecord : SolanaBaseLogRecord() {
          */
         override val id: String get() = super.id + ":outcome"
     }
+
+    /**
+     * Fake record used to trigger update of a balance.
+     * A concrete update is determined by [instruction].
+     * This record is not written to the database but only to the message bus (Kafka) to trigger an update.
+     */
+    data class InternalBalanceUpdateRecord(
+        override val account: String,
+        override val mint: String,
+        override val timestamp: Instant,
+        val instruction: SolanaBalanceUpdateInstruction,
+        override val log: SolanaLog = EMPTY_SOLANA_LOG,
+    ) : SolanaBalanceRecord()
+
 }

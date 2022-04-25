@@ -32,4 +32,17 @@ sealed class SolanaTokenRecord : SolanaBaseLogRecord() {
         override val log: SolanaLog,
         override val timestamp: Instant
     ) : SolanaTokenRecord()
+
+    /**
+     * Fake record used to trigger update of a token.
+     * A concrete update is determined by [instruction].
+     * This record is not written to the database but only to the message bus (Kafka) to trigger an update.
+     */
+    data class InternalTokenUpdateRecord(
+        override val mint: String,
+        override val timestamp: Instant,
+        val instruction: SolanaTokenUpdateInstruction,
+        override val log: SolanaLog = EMPTY_SOLANA_LOG,
+    ) : SolanaTokenRecord()
+
 }

@@ -124,19 +124,6 @@ sealed class SolanaAuctionHouseOrderRecord : SolanaBaseLogRecord() {
         override val orderId: String,
         override val log: SolanaLog = EMPTY_SOLANA_LOG,
         val instruction: SolanaOrderUpdateInstruction
-    ) : SolanaAuctionHouseOrderRecord() {
-
-        companion object {
-
-            val EMPTY_SOLANA_LOG = SolanaLog(
-                blockNumber = 0,
-                blockHash = "",
-                transactionIndex = 0,
-                transactionHash = "",
-                instructionIndex = 0,
-                innerInstructionIndex = null
-            )
-        }
-    }
+    ) : SolanaAuctionHouseOrderRecord()
 
 }

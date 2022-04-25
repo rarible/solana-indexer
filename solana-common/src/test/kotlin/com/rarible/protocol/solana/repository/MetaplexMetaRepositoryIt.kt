@@ -13,9 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired
 
 class MetaplexMetaRepositoryIt : AbstractIntegrationTest() {
 
-    @Autowired
-    private lateinit var metaplexMetaRepository: MetaplexMetaRepository
-
     @Test
     fun `save and find by meta address`() = runBlocking<Unit> {
         val metaplexMeta = createRandomMetaplexMeta()
