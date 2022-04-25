@@ -35,8 +35,8 @@ class TokenMetaUpdateTrigger(
     override suspend fun handle(event: List<TokenMetaEventDto>) {
         for (metaEventDto in event) {
             when (metaEventDto) {
-                is TokenMetaTriggerEventDto -> triggerMetaUpdateForTokenAndBalances(metaEventDto.tokenAddress)
-                is TokenMetaUpdateEventDto -> Unit
+                is TokenMetaTriggerEventDto -> Unit
+                is TokenMetaUpdateEventDto -> triggerMetaUpdateForTokenAndBalances(metaEventDto.tokenAddress)
             }
         }
     }
