@@ -22,7 +22,7 @@ class BalanceMetricReducer(
             is BalanceInitializeAccountEvent -> "initialize_account"
             is BalanceOutcomeEvent -> "transfer_from"
             is BalanceIncomeEvent -> "transfer_to"
-            is BalanceInternalUpdateEvent -> "transfer_to"
+            is BalanceInternalUpdateEvent -> "internal_update"
         }
     }
 }
