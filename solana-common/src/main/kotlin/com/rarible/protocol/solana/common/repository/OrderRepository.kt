@@ -3,6 +3,7 @@ package com.rarible.protocol.solana.common.repository
 import com.rarible.core.mongo.util.div
 import com.rarible.protocol.solana.common.model.Asset
 import com.rarible.protocol.solana.common.model.AssetType
+import com.rarible.protocol.solana.common.model.AuctionHouseId
 import com.rarible.protocol.solana.common.model.Order
 import com.rarible.protocol.solana.common.model.OrderId
 import com.rarible.protocol.solana.common.model.OrderStatus
@@ -44,6 +45,17 @@ class OrderRepository(
             .matching(query)
             .all()
             .asFlow()
+
+    fun findByAuctionHouse(auctionHouse: AuctionHouseId): Flow<Order> {
+        val criteria = Criteria().andOperator(
+            Order::auctionHouse isEqualTo auctionHouse,
+        )
+
+        return mongo.find(
+            Query(criteria),
+            Order::class.java,
+        ).asFlow()
+    }
 
     fun findCurrencyTypesOfSellOrders(tokenAddress: String): Flow<AssetType> {
         val criteria = Criteria().andOperator(
@@ -163,8 +175,13 @@ class OrderRepository(
             .on("_id", Sort.Direction.ASC)
             .background()
 
-        val BY_DB_UPDATED_AT_AND_ID_DEFINITION = Index()
+        val BY_DB_UPDATED_AT_AND_ID_DEFINITION: Index = Index()
             .on(Order::dbUpdatedAt.name, Sort.Direction.ASC)
+            .on("_id", Sort.Direction.ASC)
+            .background()
+
+        val BY_AUCTION_HOUSE_AND_ID_DEFINITION: Index = Index()
+            .on(Order::auctionHouse.name, Sort.Direction.ASC)
             .on("_id", Sort.Direction.ASC)
             .background()
 
@@ -177,7 +194,8 @@ class OrderRepository(
             SELL_BUY_ORDERS_BY_MAKER_AND_MINT_AND_STATUS_DEFINITION,
             SELL_ORDERS_BY_ITEM_CURRENCY_STATUS_SORT_BY_PRICE_DEFINITION,
             BUY_ORDERS_BY_ITEM_CURRENCY_STATUS_SORT_BY_PRICE_DEFINITION,
-            BY_DB_UPDATED_AT_AND_ID_DEFINITION
+            BY_DB_UPDATED_AT_AND_ID_DEFINITION,
+            BY_AUCTION_HOUSE_AND_ID_DEFINITION
         )
     }
 }

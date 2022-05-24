@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component
 @Component
 class OrderStatusEscrowUpdateService(
     private val orderRepository: OrderRepository,
-    private val logRecordEventPublisher: LogRecordEventPublisher,
+    private val logRecordEventPublisher: LogRecordEventPublisher
 ) {
     private val logger = LoggerFactory.getLogger(OrderStatusEscrowUpdateService::class.java)
 

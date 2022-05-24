@@ -26,6 +26,8 @@ data class Asset(
 @Document(Order.COLLECTION)
 data class Order(
     val auctionHouse: String,
+    val auctionHouseSellerFeeBasisPoints: Int?,
+    val auctionHouseRequiresSignOff: Boolean?,
     val maker: String,
     val makerAccount: String?,
     val status: OrderStatus,
@@ -67,6 +69,8 @@ data class Order(
 
         fun empty(): Order = Order(
             auctionHouse = "",
+            auctionHouseRequiresSignOff = null,
+            auctionHouseSellerFeeBasisPoints = null,
             maker = "",
             makerAccount = "",
             status = OrderStatus.CANCELLED,

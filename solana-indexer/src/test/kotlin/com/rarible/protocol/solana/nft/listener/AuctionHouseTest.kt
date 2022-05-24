@@ -360,6 +360,8 @@ class AuctionHouseTest : AbstractBlockScannerTest() {
                 .isEqualTo(
                     Order(
                         auctionHouse = house.id,
+                        auctionHouseSellerFeeBasisPoints = 1000,
+                        auctionHouseRequiresSignOff = false,
                         maker = sellerWallet,
                         makerAccount = "", // TODO: calculate maker account.
                         status = OrderStatus.ACTIVE,
@@ -427,6 +429,8 @@ class AuctionHouseTest : AbstractBlockScannerTest() {
                 .isEqualTo(
                     Order(
                         auctionHouse = house.id,
+                        auctionHouseSellerFeeBasisPoints = 1000,
+                        auctionHouseRequiresSignOff = false,
                         maker = sellerWallet,
                         makerAccount = "", // TODO: calculate maker account.
                         status = OrderStatus.CANCELLED,
@@ -478,6 +482,8 @@ class AuctionHouseTest : AbstractBlockScannerTest() {
                 .isEqualTo(
                     Order(
                         auctionHouse = house.id,
+                        auctionHouseSellerFeeBasisPoints = 1000,
+                        auctionHouseRequiresSignOff = false,
                         maker = wallet,
                         makerAccount = "", // TODO: calculate maker account.
                         status = OrderStatus.ACTIVE,
@@ -545,6 +551,8 @@ class AuctionHouseTest : AbstractBlockScannerTest() {
                 .isEqualTo(
                     Order(
                         auctionHouse = house.id,
+                        auctionHouseSellerFeeBasisPoints = 1000,
+                        auctionHouseRequiresSignOff = false,
                         maker = wallet,
                         makerAccount = "", // TODO: calculate maker account.
                         status = OrderStatus.CANCELLED,
@@ -642,6 +650,7 @@ class AuctionHouseTest : AbstractBlockScannerTest() {
         val auctionHouseKeypair = createKeypair(randomString())
         airdrop(10, getWallet(auctionHouseKeypair))
         val house = createAuctionHouse(auctionHouseKeypair)
+        updateAuctionHouse(house.id, 500, false, auctionHouseKeypair)
         val sellerWallet = getWallet(baseKeypair)
 
         val buyerKeypair = createKeypair(randomString())
@@ -674,6 +683,8 @@ class AuctionHouseTest : AbstractBlockScannerTest() {
                 .isEqualTo(
                     Order(
                         auctionHouse = house.id,
+                        auctionHouseSellerFeeBasisPoints = 500,
+                        auctionHouseRequiresSignOff = false,
                         maker = sellerWallet,
                         makerAccount = "", // TODO: calculate maker account.
                         status = OrderStatus.ACTIVE,
@@ -718,6 +729,8 @@ class AuctionHouseTest : AbstractBlockScannerTest() {
                 .isEqualTo(
                     Order(
                         auctionHouse = house.id,
+                        auctionHouseSellerFeeBasisPoints = 500,
+                        auctionHouseRequiresSignOff = false,
                         maker = buyerWallet,
                         makerAccount = "", // TODO: calculate maker account.
                         status = OrderStatus.ACTIVE,
@@ -878,6 +891,8 @@ class AuctionHouseTest : AbstractBlockScannerTest() {
                 .isEqualTo(
                     Order(
                         auctionHouse = house.id,
+                        auctionHouseSellerFeeBasisPoints = 500,
+                        auctionHouseRequiresSignOff = false,
                         maker = buyerWallet,
                         makerAccount = "", // TODO: calculate maker account.
                         status = OrderStatus.FILLED,
@@ -916,6 +931,8 @@ class AuctionHouseTest : AbstractBlockScannerTest() {
                 .isEqualTo(
                     Order(
                         auctionHouse = house.id,
+                        auctionHouseSellerFeeBasisPoints = 500,
+                        auctionHouseRequiresSignOff = false,
                         maker = sellerWallet,
                         makerAccount = "", // TODO: calculate maker account.
                         status = OrderStatus.FILLED,

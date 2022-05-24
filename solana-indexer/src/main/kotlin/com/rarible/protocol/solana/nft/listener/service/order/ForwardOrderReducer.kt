@@ -15,13 +15,16 @@ import com.rarible.protocol.solana.common.model.WrappedSolAssetType
 import com.rarible.protocol.solana.common.model.isEmpty
 import com.rarible.protocol.solana.common.records.OrderDirection
 import com.rarible.protocol.solana.common.records.SolanaOrderUpdateInstruction
+import com.rarible.protocol.solana.common.repository.AuctionHouseRepository
 import com.rarible.protocol.solana.common.service.PriceNormalizer
+import com.rarible.protocol.solana.nft.listener.service.auction.house.AuctionHouseNotReadyException
 import org.springframework.stereotype.Component
 import java.math.BigInteger
 
 @Component
 class ForwardOrderReducer(
-    private val priceNormalizer: PriceNormalizer
+    private val priceNormalizer: PriceNormalizer,
+    private val auctionHouseRepository: AuctionHouseRepository
 ) : Reducer<OrderEvent, Order> {
     override suspend fun reduce(entity: Order, event: OrderEvent): Order {
         if (event !is OrderSellEvent && event !is OrderBuyEvent && entity.isEmpty) {
@@ -44,59 +47,73 @@ class ForwardOrderReducer(
                 )
             }
 
-            is OrderBuyEvent -> Order(
-                auctionHouse = event.auctionHouse,
-                maker = event.maker,
-                makerAccount = event.makerAccount,
-                status = OrderStatus.ACTIVE,
-                make = Asset(
-                    type = WrappedSolAssetType(),
-                    amount = event.buyPrice
-                ),
-                take = event.buyAsset,
-                fill = BigInteger.ZERO,
-                createdAt = event.timestamp,
-                updatedAt = event.timestamp,
-                revertableEvents = emptyList(),
-                id = Order.calculateAuctionHouseOrderId(
-                    maker = event.maker,
-                    mint = event.buyAsset.type.tokenAddress,
-                    direction = OrderDirection.BUY,
-                    auctionHouse = event.auctionHouse
-                ),
-                direction = OrderDirection.BUY,
-                makePrice = null,
-                takePrice = null,
-                states = emptyList(),
-                dbUpdatedAt = nowMillis()
-            ).let { order -> priceNormalizer.withUpdatedMakeAndTakePrice(order) }
+            is OrderBuyEvent -> {
+                val auctionHouse = auctionHouseRepository.findByAccount(event.auctionHouse)
+                    ?: throw AuctionHouseNotReadyException("Auction house: ${event.auctionHouse} missed in repository")
 
-            is OrderSellEvent -> Order(
-                auctionHouse = event.auctionHouse,
-                maker = event.maker,
-                status = OrderStatus.ACTIVE,
-                make = event.sellAsset,
-                makerAccount = event.makerAccount,
-                take = Asset(
-                    type = WrappedSolAssetType(),
-                    amount = event.sellPrice
-                ),
-                fill = BigInteger.ZERO,
-                createdAt = event.timestamp,
-                updatedAt = event.timestamp,
-                revertableEvents = emptyList(),
-                id = Order.calculateAuctionHouseOrderId(
+                Order(
+                    auctionHouseSellerFeeBasisPoints = auctionHouse.sellerFeeBasisPoints,
+                    auctionHouseRequiresSignOff = auctionHouse.requiresSignOff,
+                    auctionHouse = event.auctionHouse,
                     maker = event.maker,
-                    mint = event.sellAsset.type.tokenAddress,
+                    makerAccount = event.makerAccount,
+                    status = OrderStatus.ACTIVE,
+                    make = Asset(
+                        type = WrappedSolAssetType(),
+                        amount = event.buyPrice
+                    ),
+                    take = event.buyAsset,
+                    fill = BigInteger.ZERO,
+                    createdAt = event.timestamp,
+                    updatedAt = event.timestamp,
+                    revertableEvents = emptyList(),
+                    id = Order.calculateAuctionHouseOrderId(
+                        maker = event.maker,
+                        mint = event.buyAsset.type.tokenAddress,
+                        direction = OrderDirection.BUY,
+                        auctionHouse = event.auctionHouse
+                    ),
+                    direction = OrderDirection.BUY,
+                    makePrice = null,
+                    takePrice = null,
+                    states = emptyList(),
+                    dbUpdatedAt = nowMillis()
+                ).let { order -> priceNormalizer.withUpdatedMakeAndTakePrice(order) }
+            }
+
+            is OrderSellEvent -> {
+                val auctionHouse = auctionHouseRepository.findByAccount(event.auctionHouse)
+                    ?: throw AuctionHouseNotReadyException("Auction house: ${event.auctionHouse} missed in repository")
+
+                Order(
+                    auctionHouseSellerFeeBasisPoints = auctionHouse.sellerFeeBasisPoints,
+                    auctionHouseRequiresSignOff = auctionHouse.requiresSignOff,
+                    auctionHouse = event.auctionHouse,
+                    maker = event.maker,
+                    status = OrderStatus.ACTIVE,
+                    make = event.sellAsset,
+                    makerAccount = event.makerAccount,
+                    take = Asset(
+                        type = WrappedSolAssetType(),
+                        amount = event.sellPrice
+                    ),
+                    fill = BigInteger.ZERO,
+                    createdAt = event.timestamp,
+                    updatedAt = event.timestamp,
+                    revertableEvents = emptyList(),
+                    id = Order.calculateAuctionHouseOrderId(
+                        maker = event.maker,
+                        mint = event.sellAsset.type.tokenAddress,
+                        direction = OrderDirection.SELL,
+                        auctionHouse = event.auctionHouse
+                    ),
                     direction = OrderDirection.SELL,
-                    auctionHouse = event.auctionHouse
-                ),
-                direction = OrderDirection.SELL,
-                makePrice = null,
-                takePrice = null,
-                states = emptyList(),
-                dbUpdatedAt = nowMillis()
-            ).let { order -> priceNormalizer.withUpdatedMakeAndTakePrice(order) }
+                    makePrice = null,
+                    takePrice = null,
+                    states = emptyList(),
+                    dbUpdatedAt = nowMillis()
+                ).let { order -> priceNormalizer.withUpdatedMakeAndTakePrice(order) }
+            }
 
             is OrderCancelEvent -> entity.copy(
                 status = OrderStatus.CANCELLED,
@@ -104,11 +121,16 @@ class ForwardOrderReducer(
             )
 
             is InternalUpdateEvent -> {
-                when (event.instruction) {
+                when (val instruction = event.instruction) {
                     // We do not need to execute any updates here, balance will be checked in UpdateService
-                    is SolanaOrderUpdateInstruction.BalanceUpdate -> entity.copy(updatedAt = event.timestamp)
-                    is SolanaOrderUpdateInstruction.EscrowUpdate -> entity.copy(updatedAt = event.timestamp)
-                }
+                    is SolanaOrderUpdateInstruction.BalanceUpdate -> entity
+                    is SolanaOrderUpdateInstruction.EscrowUpdate -> entity
+                    is SolanaOrderUpdateInstruction.AuctionHouseUpdate ->
+                        entity.copy(
+                            auctionHouseSellerFeeBasisPoints = instruction.sellerFeeBasisPoints,
+                            auctionHouseRequiresSignOff = instruction.requiresSignOff
+                        )
+                }.copy(updatedAt = event.timestamp)
             }
         }.copy(states = states)
     }

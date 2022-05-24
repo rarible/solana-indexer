@@ -8,12 +8,10 @@ import com.rarible.protocol.solana.common.continuation.Paging
 import com.rarible.protocol.solana.common.continuation.PriceIdContinuation
 import com.rarible.protocol.solana.common.converter.AssetConverter
 import com.rarible.protocol.solana.common.converter.OrderConverter
-import com.rarible.protocol.solana.common.model.AuctionHouse
 import com.rarible.protocol.solana.common.model.Order
 import com.rarible.protocol.solana.common.model.OrderStatus
 import com.rarible.protocol.solana.common.model.order.filter.OrderFilter
 import com.rarible.protocol.solana.common.model.order.filter.OrderFilterSort
-import com.rarible.protocol.solana.common.repository.AuctionHouseRepository
 import com.rarible.protocol.solana.dto.OrderCurrenciesDto
 import com.rarible.protocol.solana.dto.OrderDto
 import com.rarible.protocol.solana.dto.OrderIdsDto
@@ -23,7 +21,6 @@ import com.rarible.protocol.solana.dto.OrdersDto
 import com.rarible.protocol.solana.dto.SyncSortDto
 import com.rarible.protocol.solana.nft.api.service.OrderApiService
 import com.rarible.protocol.union.dto.continuation.page.PageSize
-import kotlinx.coroutines.flow.toList
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 import java.time.Instant
@@ -32,22 +29,18 @@ import java.time.Instant
 class OrderController(
     private val orderApiService: OrderApiService,
     private val orderConverter: OrderConverter,
-    private val assetConverter: AssetConverter,
-    private val auctionHouseRepository: AuctionHouseRepository
+    private val assetConverter: AssetConverter
 ) : OrderControllerApi {
 
     override suspend fun getOrderById(id: String): ResponseEntity<OrderDto> {
         val order = orderApiService.getOrderById(id)
-        val auctionHouse = auctionHouseRepository.findByAccount(order.auctionHouse)
-            ?: error("Can't find auction house: ${order.auctionHouse}")
 
-        return ResponseEntity.ok(orderConverter.convert(order, auctionHouse))
+        return ResponseEntity.ok(orderConverter.convert(order))
     }
 
     override suspend fun getOrdersByIds(orderIdsDto: OrderIdsDto): ResponseEntity<OrdersDto> {
         val orders = orderApiService.findByIds(orderIdsDto.ids)
-            .associateWithAuctionHouse()
-            .map { orderConverter.convert(it.key, it.value) }
+            .map { orderConverter.convert(it) }
 
         return ResponseEntity.ok(OrdersDto(null, orders))
     }
@@ -242,10 +235,9 @@ class OrderController(
         continuationFactory: ContinuationFactory<OrderDto, *>,
         size: Int
     ): OrdersDto {
-        val dto = orders.associateWithAuctionHouse()
-            .map { orderConverter.convert(it.key, it.value) }
-
+        val dto = orders.map { orderConverter.convert(it) }
         val slice = Paging(continuationFactory, dto).getSlice(size)
+
         return OrdersDto(slice.continuation, slice.entities)
     }
 
@@ -265,13 +257,5 @@ class OrderController(
     private fun SyncSortDto.fromDto(): OrderFilterSort = when (this) {
         SyncSortDto.DB_UPDATE_ASC -> OrderFilterSort.DB_UPDATE_ASC
         SyncSortDto.DB_UPDATE_DESC -> OrderFilterSort.DB_UPDATE_DESC
-    }
-
-    private suspend fun List<Order>.associateWithAuctionHouse(): Map<Order, AuctionHouse> {
-        val auctionHouses = auctionHouseRepository.findByAccounts(map { it.auctionHouse })
-            .toList()
-            .associateBy { it.account }
-
-        return associateWith { auctionHouses[it.auctionHouse] ?: error("Can't find auction house: ${it.auctionHouse}") }
     }
 }

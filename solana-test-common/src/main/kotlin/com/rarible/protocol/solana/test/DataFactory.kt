@@ -8,7 +8,6 @@ import com.rarible.core.test.data.randomBoolean
 import com.rarible.core.test.data.randomInt
 import com.rarible.core.test.data.randomLong
 import com.rarible.core.test.data.randomString
-import com.rarible.protocol.solana.borsh.Base58
 import com.rarible.protocol.solana.common.meta.MetaplexOffChainCollectionHash
 import com.rarible.protocol.solana.common.meta.TokenMeta
 import com.rarible.protocol.solana.common.model.Asset
@@ -230,6 +229,8 @@ fun randomSellOrder(
 ): Order {
     return Order(
         auctionHouse = randomAccount(),
+        auctionHouseSellerFeeBasisPoints = randomInt(10000),
+        auctionHouseRequiresSignOff = randomBoolean(),
         maker = maker,
         makerAccount = makerAccount,
         status = OrderStatus.ACTIVE,
@@ -254,6 +255,8 @@ fun randomBuyOrder(
 ): Order {
     return Order(
         auctionHouse = randomAccount(),
+        auctionHouseSellerFeeBasisPoints = randomInt(10000),
+        auctionHouseRequiresSignOff = randomBoolean(),
         maker = randomAccount(),
         makerAccount = randomAccount(),
         status = OrderStatus.ACTIVE,

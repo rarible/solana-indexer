@@ -1,6 +1,5 @@
 package com.rarible.protocol.solana.common.converter
 
-import com.rarible.protocol.solana.common.model.AuctionHouse
 import com.rarible.protocol.solana.common.model.Order
 import com.rarible.protocol.solana.common.model.OrderStatus
 import com.rarible.protocol.solana.common.records.OrderDirection
@@ -17,10 +16,10 @@ class OrderConverter(
     private val priceNormalizer: PriceNormalizer
 ) {
 
-    suspend fun convert(order: Order, auctionHouse: AuctionHouse): OrderDto =
+    suspend fun convert(order: Order): OrderDto =
         AuctionHouseOrderDto(
-            auctionHouseFee = auctionHouse.sellerFeeBasisPoints,
-            auctionHouseRequiresSignOff = auctionHouse.requiresSignOff,
+            auctionHouseFee = order.auctionHouseSellerFeeBasisPoints,
+            auctionHouseRequiresSignOff = order.auctionHouseRequiresSignOff,
             maker = order.maker,
             make = assetConverter.convert(order.make),
             take = assetConverter.convert(order.take),
