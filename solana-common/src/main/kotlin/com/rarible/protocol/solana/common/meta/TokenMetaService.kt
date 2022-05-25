@@ -100,18 +100,16 @@ class TokenMetaService(
         }.toMap()
     }
 
-    suspend fun extendWithAvailableMeta(token: Token): TokenWithMeta {
-        val tokenMeta = getAvailableTokenMeta(token.mint)
-        return TokenWithMeta(token, tokenMeta)
-    }
-
     suspend fun extendWithAvailableMeta(balance: Balance): BalanceWithMeta {
         val tokenMeta = getAvailableTokenMeta(balance.mint)
         return BalanceWithMeta(balance, tokenMeta)
     }
 
+    // TODO[meta]: WARNING: GUARANTEE THAT WE SEND THE UPDATE IN ANY CASE.
+
     suspend fun getAvailableTokenMeta(tokenAddress: TokenId): TokenMeta? {
         val onChainMeta = getOnChainMeta(tokenAddress) ?: return null
+        // TODO[meta]: make it the required part of the meta. Use the meta trigger event to ask the union service to load meta for us.
         val offChainMeta = getOffChainMeta(tokenAddress)
         return TokenMetaParser.mergeOnChainAndOffChainMeta(
             onChainMeta = onChainMeta.metaFields,

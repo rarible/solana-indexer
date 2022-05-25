@@ -17,7 +17,12 @@ class TokenUpdateListener(
     private val logger = LoggerFactory.getLogger(TokenUpdateListener::class.java)
 
     suspend fun onTokenChanged(token: Token) {
-        val tokenWithMeta = tokenMetaService.extendWithAvailableMeta(token)
+        val tokenMeta = tokenMetaService.getAvailableTokenMeta(token.mint)
+        if (tokenMeta == null) {
+            logger.info("Token ${token.mint} meta is not available yet, so ignoring the token update event")
+            return
+        }
+        val tokenWithMeta = TokenWithMeta(token, tokenMeta)
         onTokenChanged(tokenWithMeta)
     }
 

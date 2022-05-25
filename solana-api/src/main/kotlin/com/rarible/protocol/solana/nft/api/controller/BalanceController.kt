@@ -11,6 +11,7 @@ import com.rarible.protocol.solana.dto.BalancesDto
 import com.rarible.protocol.solana.nft.api.service.BalanceApiService
 import com.rarible.protocol.union.dto.continuation.page.PageSize
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
@@ -33,8 +34,7 @@ class BalanceController(
         val safeSize = PageSize.BALANCE.limit(size)
         val balancesWithMeta = balanceApiService.getBalanceWithMetaByOwner(
             owner,
-            DateIdContinuation.parse(continuation),
-            safeSize
+            DateIdContinuation.parse(continuation)
         ).toList()
 
         val dto = toSlice(balancesWithMeta, safeSize)
@@ -59,10 +59,9 @@ class BalanceController(
     ): ResponseEntity<BalancesDto> {
         val safeSize = PageSize.BALANCE.limit(size)
         val balancesWithMeta = balanceApiService.getBalanceWithMetaByMint(
-            mint,
-            DateIdContinuation.parse(continuation),
-            safeSize
-        ).toList()
+            mint = mint,
+            continuation = DateIdContinuation.parse(continuation)
+        ).take(safeSize).toList()
 
         val dto = toSlice(balancesWithMeta, safeSize)
         return ResponseEntity.ok(dto)

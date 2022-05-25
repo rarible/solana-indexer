@@ -32,7 +32,7 @@ class BalanceRepositoryIt : AbstractIntegrationTest() {
         balanceRepository.save(createRandomBalance(mint = balance1.mint))
 
         val expected = listOf(balance1, balance2).sortedByDescending { it.updatedAt }
-        val result = balanceRepository.findByOwner(balance1.owner, null, 100, true).toList()
+        val result = balanceRepository.findByOwner(balance1.owner, null, true).toList()
 
         assertThat(result).isEqualTo(expected)
     }
@@ -41,7 +41,7 @@ class BalanceRepositoryIt : AbstractIntegrationTest() {
     fun `find by owner - without deleted`() = runBlocking<Unit> {
         val balance = balanceRepository.save(createRandomBalance(value = BigInteger.ZERO))
 
-        val result = balanceRepository.findByOwner(balance.owner, null, 100, false)
+        val result = balanceRepository.findByOwner(balance.owner, null, false)
             .toList()
 
         assertThat(result).hasSize(0)
@@ -56,7 +56,7 @@ class BalanceRepositoryIt : AbstractIntegrationTest() {
 
         val expected = listOf(balance, balance2).sortedByDescending { it.updatedAt }
 
-        val result = balanceRepository.findByMint(balance.mint, null, 100, true).toList()
+        val result = balanceRepository.findByMint(balance.mint, null, true).toList()
 
         assertThat(result).isEqualTo(expected)
     }
@@ -65,7 +65,7 @@ class BalanceRepositoryIt : AbstractIntegrationTest() {
     fun `find by mint - without deleted`() = runBlocking<Unit> {
         val balance = balanceRepository.save(createRandomBalance(value = BigInteger.ZERO))
 
-        val result = balanceRepository.findByMint(balance.mint, null, 100, false).toList()
+        val result = balanceRepository.findByMint(balance.mint, null, false).toList()
 
         assertThat(result).hasSize(0)
     }

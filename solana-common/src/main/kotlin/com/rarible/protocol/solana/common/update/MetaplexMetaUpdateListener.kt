@@ -32,7 +32,6 @@ class MetaplexMetaUpdateListener(
         balanceRepository.findByMint(
             mint = tokenAddress,
             continuation = null,
-            limit = Int.MAX_VALUE,
             includeDeleted = false
         ).collect { balance ->
             balanceUpdateListener.onBalanceChanged(BalanceWithMeta(balance, tokenMeta))

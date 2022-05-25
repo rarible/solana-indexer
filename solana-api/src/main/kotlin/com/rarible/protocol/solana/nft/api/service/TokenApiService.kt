@@ -2,28 +2,25 @@ package com.rarible.protocol.solana.nft.api.service
 
 import com.rarible.protocol.solana.common.continuation.DateIdContinuation
 import com.rarible.protocol.solana.common.meta.TokenMetaService
-import com.rarible.protocol.solana.common.model.Token
 import com.rarible.protocol.solana.common.model.TokenWithMeta
-import com.rarible.protocol.solana.common.repository.MetaplexMetaRepository
-import com.rarible.protocol.solana.common.repository.MetaplexOffChainMetaRepository
 import com.rarible.protocol.solana.common.repository.TokenRepository
 import com.rarible.protocol.solana.common.util.RoyaltyDistributor
 import com.rarible.protocol.solana.dto.RoyaltyDto
 import com.rarible.protocol.solana.nft.api.exceptions.EntityNotFoundApiException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.take
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.time.Instant
 
 @Component
 class TokenApiService(
     private val tokenRepository: TokenRepository,
-    private val tokenMetaService: TokenMetaService,
-    private val metaplexMetaRepository: MetaplexMetaRepository,
-    private val metaplexOffChainMetaRepository: MetaplexOffChainMetaRepository
+    private val tokenMetaService: TokenMetaService
 ) {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     suspend fun findAll(
         lastUpdatedFrom: Instant?,
@@ -48,8 +45,12 @@ class TokenApiService(
     suspend fun getTokenWithMeta(tokenAddress: String): TokenWithMeta {
         val token = tokenRepository.findByMint(tokenAddress)
             ?: throw EntityNotFoundApiException("Token", tokenAddress)
-        val tokenWithMeta = tokenMetaService.extendWithAvailableMeta(token).takeIf { it.hasMeta }
-        return tokenWithMeta ?: throw EntityNotFoundApiException("Meta", tokenAddress)
+        val availableMeta = tokenMetaService.getAvailableTokenMeta(tokenAddress)
+        if (availableMeta == null) {
+            logger.info("Token $tokenAddress meta is not loaded yet, so returning 404")
+            throw EntityNotFoundApiException("Token meta", tokenAddress)
+        }
+        return TokenWithMeta(token, availableMeta)
     }
 
     suspend fun getTokenRoyalties(tokenAddress: String): List<RoyaltyDto> {
@@ -57,32 +58,9 @@ class TokenApiService(
         val creators = meta.metaFields.creators.associateBy({ it.address }, { it.share })
 
         return RoyaltyDistributor.distribute(
-            meta.metaFields.sellerFeeBasisPoints,
-            creators
+            sellerFeeBasisPoints = meta.metaFields.sellerFeeBasisPoints,
+            creators = creators
         ).map { RoyaltyDto(it.key, it.value) }
-    }
-
-    private fun getTokensByMetaplexCollectionAddress(
-        collectionAddress: String,
-        fromTokenAddress: String?,
-        limit: Int
-    ): Flow<Token> {
-        return metaplexMetaRepository.findByCollectionAddress(collectionAddress, fromTokenAddress, limit)
-            // TODO can be done with batch request
-            .mapNotNull { meta ->
-                tokenRepository.findByMint(meta.tokenAddress)
-            }
-    }
-
-    private fun getTokensByOffChainCollectionHash(
-        offChainCollectionHash: String,
-        fromTokenAddress: String?,
-        limit: Int
-    ): Flow<Token> {
-        return metaplexOffChainMetaRepository.findByOffChainCollectionHash(offChainCollectionHash, fromTokenAddress, limit)
-            .mapNotNull { tokenOffChainCollection ->
-                tokenRepository.findByMint(tokenOffChainCollection.tokenAddress)
-            }
     }
 
     suspend fun getTokensWithMetaByCollection(

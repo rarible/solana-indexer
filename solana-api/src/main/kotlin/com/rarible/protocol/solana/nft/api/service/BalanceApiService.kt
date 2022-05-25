@@ -28,24 +28,31 @@ class BalanceApiService(
         return tokenMetaService.extendWithAvailableMeta(balances.first())
     }
 
-    suspend fun getBalancesWithMetaByMintAndOwner(mint: String, owner: String): Flow<BalanceWithMeta> {
+    suspend fun getBalancesWithMetaByMintAndOwner(
+        mint: String,
+        owner: String
+    ): Flow<BalanceWithMeta> {
         return balanceRepository.findByMintAndOwner(mint, owner, false)
             .map { tokenMetaService.extendWithAvailableMeta(it) }
     }
 
-    fun getBalanceWithMetaByOwner(owner: String, continuation: DateIdContinuation?, limit: Int): Flow<BalanceWithMeta> =
+    fun getBalanceWithMetaByOwner(
+        owner: String,
+        continuation: DateIdContinuation?
+    ): Flow<BalanceWithMeta> =
         balanceRepository.findByOwner(
-            owner,
-            continuation,
-            limit,
-            false
+            owner = owner,
+            continuation = continuation,
+            includeDeleted = false
         ).map { tokenMetaService.extendWithAvailableMeta(it) }
 
-    fun getBalanceWithMetaByMint(mint: String, continuation: DateIdContinuation?, limit: Int): Flow<BalanceWithMeta> =
+    fun getBalanceWithMetaByMint(
+        mint: String,
+        continuation: DateIdContinuation?
+    ): Flow<BalanceWithMeta> =
         balanceRepository.findByMint(
-            mint,
-            continuation,
-            limit,
-            false
+            mint = mint,
+            continuation = continuation,
+            includeDeleted = false
         ).map { tokenMetaService.extendWithAvailableMeta(it) }
 }

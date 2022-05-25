@@ -17,7 +17,12 @@ class BalanceUpdateListener(
     private val logger = LoggerFactory.getLogger(BalanceUpdateListener::class.java)
 
     suspend fun onBalanceChanged(balance: Balance) {
-        val balanceWithMeta = tokenMetaService.extendWithAvailableMeta(balance)
+        val tokenMeta = tokenMetaService.getAvailableTokenMeta(balance.mint)
+        if (tokenMeta == null) {
+            logger.info("Balance's ${balance.account} meta of token ${balance.mint} is not available, so ignoring the update event")
+            return
+        }
+        val balanceWithMeta = BalanceWithMeta(balance, tokenMeta)
         onBalanceChanged(balanceWithMeta)
     }
 

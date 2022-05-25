@@ -16,7 +16,6 @@ import com.rarible.protocol.solana.dto.TokensDto
 import com.rarible.protocol.solana.nft.api.service.BalanceApiService
 import com.rarible.protocol.solana.nft.api.service.TokenApiService
 import com.rarible.protocol.union.dto.continuation.page.PageSize
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
@@ -92,6 +91,7 @@ class TokenController(
         return ResponseEntity.ok(dto)
     }
 
+    // TODO[meta]: rework this request.
     override suspend fun getTokensByOwner(
         owner: String,
         continuation: String?,
@@ -100,16 +100,22 @@ class TokenController(
         val safeSize = PageSize.TOKEN.limit(size)
 
         val balancesWithMeta = balanceApiService.getBalanceWithMetaByOwner(
-            owner,
-            DateIdContinuation.parse(continuation),
-            safeSize
+            owner = owner,
+            continuation = DateIdContinuation.parse(continuation)
         )
 
-        val tokensWithMeta = balancesWithMeta.map { balance ->
-            val tokenWithMeta = tokenApiService.getTokenWithMeta(balance.balance.mint)
-            // There is no way to provide correct sorting except of using updatedAt of the balance
-            tokenWithMeta.copy(token = tokenWithMeta.token.copy(updatedAt = balance.balance.updatedAt))
-        }.toList()
+        val tokensWithMeta = arrayListOf<TokenWithMeta>()
+        val uniqueMints = hashSetOf<String>()
+        balancesWithMeta.collect { (balance) ->
+            val mint = balance.mint
+            if (tokensWithMeta.size < safeSize && uniqueMints.add(mint)) {
+                val tokenWithMeta = tokenApiService.getTokenWithMeta(mint)
+
+                // There is no way to provide correct sorting except of using updatedAt of the balance
+                tokensWithMeta += tokenWithMeta
+                    .copy(token = tokenWithMeta.token.copy(updatedAt = balance.updatedAt))
+            }
+        }
 
         val dto = toSlice(tokensWithMeta, TokenContinuation.ByLastUpdatedAndId, safeSize)
         return ResponseEntity.ok(dto)
