@@ -6,6 +6,7 @@ import com.rarible.protocol.solana.common.model.MetaplexMetaFields
 import com.rarible.protocol.solana.common.model.TokenId
 import com.rarible.protocol.union.dto.continuation.page.PageSize
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.reactive.awaitFirstOrNull
@@ -36,6 +37,7 @@ class MetaplexMetaRepository(
     }
 
     fun findByTokenAddresses(tokenAddresses: Collection<TokenId>): Flow<MetaplexMeta> {
+        if (tokenAddresses.isEmpty()) return emptyFlow()
         val criteria = Criteria.where(MetaplexMeta::tokenAddress.name).`in`(tokenAddresses)
         return mongo.find(Query(criteria), MetaplexMeta::class.java).asFlow()
     }

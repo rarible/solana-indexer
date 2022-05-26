@@ -11,7 +11,7 @@ data class TokenMeta(
     val description: String?,
     val creators: List<MetaplexTokenCreator>,
     val collection: Collection?,
-    val sellerFeeBasisPoints: Int?,
+    val sellerFeeBasisPoints: Int,
     val url: String,
     val attributes: List<Attribute>?,
     val contents: List<Content>,

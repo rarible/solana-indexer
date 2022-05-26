@@ -9,12 +9,16 @@ import com.rarible.protocol.solana.dto.OrderEventDto
 import com.rarible.protocol.solana.dto.OrderUpdateEventDto
 import com.rarible.protocol.solana.dto.SolanaEventTopicProvider
 import com.rarible.protocol.solana.dto.TokenEventDto
+import com.rarible.protocol.solana.dto.TokenMetaEventDto
 import java.util.*
 
 object KafkaEventFactory {
 
     private val TOKEN_EVENT_HEADERS = mapOf(
         "protocol.solana.token.event.version" to SolanaEventTopicProvider.VERSION
+    )
+    private val TOKEN_META_EVENT_HEADERS = mapOf(
+        "protocol.solana.token.meta.event.version" to SolanaEventTopicProvider.VERSION
     )
     private val BALANCE_EVENT_HEADERS = mapOf(
         "protocol.solana.balance.event.version" to SolanaEventTopicProvider.VERSION
@@ -35,6 +39,14 @@ object KafkaEventFactory {
             key = dto.address,
             value = dto,
             headers = TOKEN_EVENT_HEADERS
+        )
+
+    fun tokenMetaEvent(dto: TokenMetaEventDto): KafkaMessage<TokenMetaEventDto> =
+        KafkaMessage(
+            id = UUID.randomUUID().toString(),
+            key = dto.tokenAddress,
+            value = dto,
+            headers = TOKEN_META_EVENT_HEADERS
         )
 
     fun balanceEvent(dto: BalanceEventDto): KafkaMessage<BalanceEventDto> {

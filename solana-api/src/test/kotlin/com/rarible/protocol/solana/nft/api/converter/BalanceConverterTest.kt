@@ -5,6 +5,7 @@ import com.rarible.protocol.solana.common.model.BalanceWithMeta
 import com.rarible.protocol.solana.common.pubkey.Keypair
 import com.rarible.protocol.solana.common.pubkey.ProgramDerivedAddressCalc
 import com.rarible.protocol.solana.test.createRandomBalance
+import com.rarible.protocol.solana.test.createRandomTokenMeta
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 
@@ -29,7 +30,7 @@ class BalanceConverterTest {
             BalanceWithMetaConverter.convert(
                 BalanceWithMeta(
                     associatedTokenBalance,
-                    null
+                    createRandomTokenMeta()
                 )
             ).isAssociatedTokenAccount
         ).isTrue
@@ -37,7 +38,7 @@ class BalanceConverterTest {
             BalanceWithMetaConverter.convert(
                 BalanceWithMeta(
                     secondaryBalance,
-                    null
+                    createRandomTokenMeta()
                 )
             ).isAssociatedTokenAccount
         ).isFalse

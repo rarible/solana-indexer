@@ -4,5 +4,5 @@ import com.rarible.protocol.solana.common.meta.TokenMeta
 
 data class BalanceWithMeta(
     val balance: Balance,
-    val tokenMeta: TokenMeta?
+    val tokenMeta: TokenMeta
 )

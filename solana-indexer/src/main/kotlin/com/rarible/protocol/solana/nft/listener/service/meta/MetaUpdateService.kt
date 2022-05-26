@@ -8,6 +8,7 @@ import com.rarible.protocol.solana.common.model.MetaplexMeta
 import com.rarible.protocol.solana.common.model.isEmpty
 import com.rarible.protocol.solana.common.repository.MetaplexMetaRepository
 import com.rarible.protocol.solana.common.service.CollectionUpdateService
+import com.rarible.protocol.solana.common.update.TokenMetaUpdateListener
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
@@ -16,7 +17,8 @@ class MetaUpdateService(
     private val metaplexMetaRepository: MetaplexMetaRepository,
     private val tokenMetaService: TokenMetaService,
     private val collectionUpdateService: CollectionUpdateService,
-    private val tokenFilter: SolanaTokenFilter
+    private val tokenFilter: SolanaTokenFilter,
+    private val tokenMetaUpdateListener: TokenMetaUpdateListener
 ) : EntityService<MetaId, MetaplexMeta> {
 
     private val logger = LoggerFactory.getLogger(javaClass)
@@ -39,7 +41,7 @@ class MetaUpdateService(
 
         val meta = metaplexMetaRepository.save(entity)
         logger.info("Updated metaplex meta: $entity")
-        tokenMetaService.onMetaplexMetaChanged(meta)
+        tokenMetaUpdateListener.triggerTokenMetaLoading(meta.tokenAddress)
         return meta
     }
 

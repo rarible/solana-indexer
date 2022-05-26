@@ -2,6 +2,7 @@ package com.rarible.protocol.solana.nft.api.service
 
 import com.rarible.protocol.solana.common.continuation.DateIdContinuation
 import com.rarible.protocol.solana.common.meta.TokenMetaService
+import com.rarible.protocol.solana.common.model.Token
 import com.rarible.protocol.solana.common.model.TokenWithMeta
 import com.rarible.protocol.solana.common.repository.TokenRepository
 import com.rarible.protocol.solana.common.util.RoyaltyDistributor
@@ -9,6 +10,7 @@ import com.rarible.protocol.solana.dto.RoyaltyDto
 import com.rarible.protocol.solana.nft.api.exceptions.EntityNotFoundApiException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.take
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -33,13 +35,24 @@ class TokenApiService(
             lastUpdatedTo,
             continuation
         )
-        return tokenMetaService.extendWithAvailableMeta(tokens).take(limit)
+        return extendWithAvailableMeta(tokens).take(limit)
     }
 
     suspend fun getTokensWithMeta(tokenAddresses: List<String>): Flow<TokenWithMeta> {
         val tokens = tokenRepository.findByMints(tokenAddresses)
 
-        return tokenMetaService.extendWithAvailableMeta(tokens)
+        return extendWithAvailableMeta(tokens)
+    }
+
+    private suspend fun extendWithAvailableMeta(tokens: Flow<Token>): Flow<TokenWithMeta> {
+        return tokens.mapNotNull { token ->
+            val tokenMeta = tokenMetaService.getAvailableTokenMeta(token.mint)
+            if (tokenMeta == null) {
+                logger.info("Token ${token.mint} meta is not loaded yet, so skipping the token")
+                return@mapNotNull null
+            }
+            TokenWithMeta(token, tokenMeta)
+        }
     }
 
     suspend fun getTokenWithMeta(tokenAddress: String): TokenWithMeta {
@@ -54,11 +67,13 @@ class TokenApiService(
     }
 
     suspend fun getTokenRoyalties(tokenAddress: String): List<RoyaltyDto> {
-        val meta = tokenMetaService.getOnChainMeta(tokenAddress) ?: return emptyList()
-        val creators = meta.metaFields.creators.associateBy({ it.address }, { it.share })
+        val tokenMeta = tokenMetaService.getAvailableTokenMeta(tokenAddress)
+            ?: throw EntityNotFoundApiException("Token meta", tokenAddress)
+
+        val creators = tokenMeta.creators.associateBy({ it.address }, { it.share })
 
         return RoyaltyDistributor.distribute(
-            sellerFeeBasisPoints = meta.metaFields.sellerFeeBasisPoints,
+            sellerFeeBasisPoints = tokenMeta.sellerFeeBasisPoints,
             creators = creators
         ).map { RoyaltyDto(it.key, it.value) }
     }
@@ -71,6 +86,9 @@ class TokenApiService(
         val metas = tokenMetaService.getTokensMetaByCollection(collection, continuation, limit)
         val tokens = tokenRepository.findByMints(metas.keys)
 
-        return tokens.map { TokenWithMeta(it, metas[it.mint]) }
+        return tokens.mapNotNull {
+            val tokenMeta = metas[it.mint] ?: return@mapNotNull null
+            TokenWithMeta(it, tokenMeta)
+        }
     }
 }
