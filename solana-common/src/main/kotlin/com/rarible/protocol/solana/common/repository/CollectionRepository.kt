@@ -16,34 +16,29 @@ class CollectionRepository(
     private val mongo: ReactiveMongoOperations
 ) {
 
-    private companion object {
-        const val ID = "_id"
-        const val COLLECTION_NAME = "collection"
-    }
-
     suspend fun save(collection: SolanaCollection): SolanaCollection {
-        return mongo.save(collection, COLLECTION_NAME)
+        return mongo.save(collection, SolanaCollection.COLLECTION)
             .awaitFirst()
     }
 
     suspend fun findById(id: String): SolanaCollection? {
-        return mongo.findById(id, SolanaCollection::class.java, COLLECTION_NAME)
+        return mongo.findById(id, SolanaCollection::class.java, SolanaCollection.COLLECTION)
             .awaitFirstOrNull()
     }
 
     suspend fun findByIds(ids: List<String>): Flow<SolanaCollection> {
-        val criteria = Criteria.where(ID).`in`(ids)
-        return mongo.find(Query.query(criteria), SolanaCollection::class.java, COLLECTION_NAME).asFlow()
+        val criteria = Criteria.where("_id").`in`(ids)
+        return mongo.find(Query.query(criteria), SolanaCollection::class.java, SolanaCollection.COLLECTION).asFlow()
     }
 
     fun findAll(fromId: String?): Flow<SolanaCollection> {
-        val criteria = fromId?.let { Criteria(ID).gt(it) }
+        val criteria = fromId?.let { Criteria("_id").gt(it) }
             ?: Criteria()
 
         val query = Query(criteria)
-        query.with(Sort.by(Sort.Direction.ASC, ID))
+        query.with(Sort.by(Sort.Direction.ASC, "_id"))
 
-        return mongo.find(query, SolanaCollection::class.java, COLLECTION_NAME).asFlow()
+        return mongo.find(query, SolanaCollection::class.java, SolanaCollection.COLLECTION).asFlow()
     }
 
 }
