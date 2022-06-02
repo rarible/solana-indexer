@@ -11,7 +11,7 @@ import com.rarible.protocol.solana.common.model.BalanceWithMeta
 import com.rarible.protocol.solana.common.model.MetaplexTokenCreator
 import com.rarible.protocol.solana.common.model.Token
 import com.rarible.protocol.solana.common.model.TokenWithMeta
-import com.rarible.protocol.solana.common.service.CollectionConverter
+import com.rarible.protocol.solana.common.service.collection.CollectionConverter
 import com.rarible.protocol.solana.dto.BalanceDeleteEventDto
 import com.rarible.protocol.solana.dto.BalanceDto
 import com.rarible.protocol.solana.dto.BalanceEventDto

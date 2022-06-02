@@ -64,7 +64,7 @@ class BalanceRepository(
     fun findByMint(
         mint: String,
         continuation: DateIdContinuation?,
-        limit: Int,
+        limit: Int?,
         includeDeleted: Boolean
     ): Flow<Balance> {
         val criteria = Criteria()
@@ -72,8 +72,11 @@ class BalanceRepository(
             .includeDeleted(includeDeleted)
             .addContinuation(continuation)
 
-        val query = Query(criteria).limit(limit).withSortByLastUpdateAndId()
-
+        val query = Query(criteria)
+            .withSortByLastUpdateAndId()
+        if (limit != null) {
+            query.limit(limit)
+        }
         return mongo.find(query, Balance::class.java).asFlow()
     }
 

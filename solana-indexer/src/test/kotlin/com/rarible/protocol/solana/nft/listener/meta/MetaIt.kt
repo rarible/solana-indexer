@@ -1,18 +1,17 @@
-package com.rarible.protocol.solana.nft.listener
+package com.rarible.protocol.solana.nft.listener.meta
 
 import com.rarible.core.test.wait.Wait
-import com.rarible.protocol.solana.common.meta.MetaplexOffChainCollectionHash
 import com.rarible.protocol.solana.common.meta.TokenMeta
 import com.rarible.protocol.solana.common.model.MetaplexMeta
 import com.rarible.protocol.solana.common.model.MetaplexMetaFields
-import com.rarible.protocol.solana.common.model.MetaplexOffChainMeta
-import com.rarible.protocol.solana.common.model.MetaplexOffChainMetaFields
 import com.rarible.protocol.solana.common.model.MetaplexTokenCreator
 import com.rarible.protocol.solana.common.records.EMPTY_SOLANA_LOG
 import com.rarible.protocol.solana.common.records.SolanaMetaRecord
 import com.rarible.protocol.solana.common.records.SubscriberGroup
+import com.rarible.protocol.solana.nft.listener.EventAwareBlockScannerTest
 import com.rarible.protocol.solana.test.createRandomBalance
 import com.rarible.protocol.solana.test.createRandomMetaplexMeta
+import com.rarible.protocol.solana.test.createRandomMetaplexOffChainCollection
 import com.rarible.protocol.solana.test.createRandomMetaplexOffChainMeta
 import com.rarible.protocol.solana.test.createRandomToken
 import io.mockk.coEvery
@@ -24,20 +23,22 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.time.Instant
 
-class MetaplexMetaTest : EventAwareBlockScannerTest() {
+class MetaIt : EventAwareBlockScannerTest() {
     @Test
-    fun `Update metadata`() = runBlocking {
+    fun `create and update metadata with collection V2 - send token update events`() = runBlocking {
+        val wallet = getWallet()
+
         val collectionOld = mintNft(baseKeypair)
         val collectionNew = mintNft(baseKeypair)
-        val token = mintNft(baseKeypair, collectionOld)
+        val tokenAddress = mintNft(baseKeypair, collectionOld)
 
-        updateMetadata(baseKeypair, token, collectionNew)
+        updateMetadata(baseKeypair, tokenAddress, collectionNew)
 
         Wait.waitAssert {
             val createRecord = findRecordByType(
                 SubscriberGroup.METAPLEX_META.collectionName,
                 SolanaMetaRecord.MetaplexCreateMetadataAccountRecord::class.java
-            ).filter { it.mint == token }.single()
+            ).filter { it.mint == tokenAddress }.single()
 
             val updateRecords = findRecordByType(
                 SubscriberGroup.METAPLEX_META.collectionName,
@@ -50,7 +51,7 @@ class MetaplexMetaTest : EventAwareBlockScannerTest() {
             ).isEqualTo(
                 listOf(
                     SolanaMetaRecord.MetaplexUpdateMetadataRecord(
-                        mint = token,
+                        mint = tokenAddress,
                         updatedMeta = createRecord.meta.copy(
                             collection = MetaplexMetaFields.Collection(
                                 collectionNew,
@@ -67,28 +68,40 @@ class MetaplexMetaTest : EventAwareBlockScannerTest() {
                 )
             )
         }
+
+        val onChainCollection = TokenMeta.Collection.OnChain(
+            address = collectionNew,
+            verified = false
+        )
+        assertTokenMetaUpdatedEvent(
+            tokenAddress = tokenAddress,
+            creators = listOf(
+                MetaplexTokenCreator(
+                    address = wallet,
+                    share = 100,
+                    verified = true
+                )
+            ),
+            collection = onChainCollection
+        )
     }
 
     @Test
-    fun `create metadata - send token and balance update events`() = runBlocking {
+    fun `create metadata with collection V1 - send token update events`() = runBlocking {
         val wallet = getWallet()
 
+        val metaplexOffChainCollection = createRandomMetaplexOffChainCollection(creators = listOf(wallet))
         val metaplexOffChainMeta = createRandomMetaplexOffChainMeta().let {
-            it.copy(
-                metaFields = it.metaFields.copy(
-                    collection = MetaplexOffChainMetaFields.Collection(
-                        name = "name",
-                        family = "family",
-                        hash = MetaplexOffChainCollectionHash.calculateCollectionHash(
-                            name = "name",
-                            family = "family",
-                            creators = listOf(wallet)
-                        )
-                    )
-                )
-            )
+            it.copy(metaFields = it.metaFields.copy(collection = metaplexOffChainCollection))
         }
-        mockOffChainMeta(metaplexOffChainMeta)
+
+        // Mock loading of the off-chain meta for a token. We don't know the token address in advance, so using any() here.
+        coEvery {
+            testMetaplexOffChainMetaLoader.loadMetaplexOffChainMeta(
+                tokenAddress = any(),
+                metaplexMetaFields = any()
+            )
+        } returns metaplexOffChainMeta
 
         val tokenAddress = mintNft(baseKeypair)
 
@@ -96,10 +109,10 @@ class MetaplexMetaTest : EventAwareBlockScannerTest() {
             assertThat(metaplexMetaRepository.findByTokenAddress(tokenAddress))
                 .usingRecursiveComparison()
                 .ignoringFields(
-                    "metaAddress",
-                    "updatedAt",
-                    "createdAt",
-                    "revertableEvents"
+                    MetaplexMeta::metaAddress.name,
+                    MetaplexMeta::updatedAt.name,
+                    MetaplexMeta::createdAt.name,
+                    MetaplexMeta::revertableEvents.name
                 ).isEqualTo(
                     MetaplexMeta(
                         tokenAddress = tokenAddress,
@@ -126,6 +139,11 @@ class MetaplexMetaTest : EventAwareBlockScannerTest() {
                 )
         }
 
+        val offChainCollection = TokenMeta.Collection.OffChain(
+            name = metaplexOffChainCollection.name,
+            family = metaplexOffChainCollection.family,
+            hash = metaplexOffChainCollection.hash,
+        )
         assertTokenMetaUpdatedEvent(
             tokenAddress = tokenAddress,
             creators = listOf(
@@ -135,19 +153,12 @@ class MetaplexMetaTest : EventAwareBlockScannerTest() {
                     verified = true
                 )
             ),
-            collection = TokenMeta.Collection.OffChain(
-                name = metaplexOffChainMeta.metaFields.collection!!.name,
-                family = metaplexOffChainMeta.metaFields.collection!!.family,
-                hash = metaplexOffChainMeta.metaFields.collection!!.hash,
-            )
+            collection = offChainCollection
         )
     }
 
     @Test
-    fun `create and verify collection - send token and balance update events`() = runBlocking<Unit> {
-        // Off-chain collection will be overridden with on-chain one.
-        mockOffChainMeta(createRandomMetaplexOffChainMeta())
-
+    fun `create and verify collection V2 - send token update events`() = runBlocking<Unit> {
         val wallet = getWallet()
         val collection = mintNft(baseKeypair)
         val tokenAddress = mintNft(baseKeypair, collection)
@@ -156,12 +167,6 @@ class MetaplexMetaTest : EventAwareBlockScannerTest() {
             val meta = metaplexMetaRepository.findByTokenAddress(tokenAddress)
             assertThat(meta?.metaFields?.collection?.verified).isFalse
         }
-
-        // Insert some balance that should be updated.
-        val balance = createRandomBalance().copy(
-            mint = tokenAddress
-        )
-        balanceRepository.save(balance)
 
         verifyCollection(tokenAddress, collection)
 
@@ -183,11 +188,6 @@ class MetaplexMetaTest : EventAwareBlockScannerTest() {
                     verified = false
                 )
             ),
-            collection = onChainCollection
-        )
-
-        assertBalanceMetaUpdatedEvent(
-            balanceAccount = balance.account,
             collection = onChainCollection
         )
     }
@@ -234,14 +234,5 @@ class MetaplexMetaTest : EventAwareBlockScannerTest() {
             balanceAccount = balance.account,
             collection = onChainCollection
         )
-    }
-
-    // Mock off-chain meta before minting the token because we don't know the token address.
-    // If we don't have off-chain meta before the on-chain is loaded, there will be no event.
-    // TODO: in cli-nft.ts provide a way to mint token to a deterministic address.
-    private fun mockOffChainMeta(metaplexOffChainMeta: MetaplexOffChainMeta) {
-        coEvery {
-            metaplexOffChainMetaRepository.findByTokenAddress(any())
-        } returns metaplexOffChainMeta
     }
 }

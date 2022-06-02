@@ -1,9 +1,8 @@
 package com.rarible.protocol.solana.nft.listener.service.token
 
 import com.rarible.core.test.wait.Wait
-import com.rarible.protocol.solana.common.meta.TokenMetaParser
 import com.rarible.protocol.solana.nft.listener.EventAwareBlockScannerTest
-import com.rarible.protocol.solana.test.createRandomMetaplexMeta
+import com.rarible.protocol.solana.test.createRandomCollectionV2
 import com.rarible.protocol.solana.test.createRandomToken
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -23,18 +22,19 @@ class TokenUpdateServiceIt : EventAwareBlockScannerTest() {
         assertTokenMetaUpdatedEvent(token.mint, null, null)
     }
 
+    /**
+     * Tests that a collection update event will be sent when collection NFT is changed.
+     */
     @Test
     fun `collection NFT updated`() = runBlocking<Unit> {
         val collectionToken = createRandomToken()
-        val collectionMint = collectionToken.mint
-        collectionService.saveCollectionV2(collectionMint)
-        val metaplexMeta = createRandomMetaplexMeta(mint = collectionMint)
-        metaplexMetaRepository.save(metaplexMeta)
+        val collection = createRandomCollectionV2(id = collectionToken.mint)
+        collectionRepository.save(collection)
         tokenUpdateService.update(collectionToken)
         Wait.waitAssert {
             assertUpdateCollectionEvent(
-                collectionMint = collectionMint,
-                collectionTokenMeta = TokenMetaParser.mergeOnChainAndOffChainMeta(metaplexMeta.metaFields, null)
+                collectionMint = collectionToken.mint,
+                collectionTokenMeta = collection.collectionMeta!!
             )
         }
     }

@@ -9,7 +9,6 @@ import com.rarible.protocol.solana.common.model.TokenId
 import com.rarible.protocol.solana.common.model.TokenWithMeta
 import com.rarible.protocol.solana.common.repository.MetaplexMetaRepository
 import com.rarible.protocol.solana.common.repository.MetaplexOffChainMetaRepository
-import com.rarible.protocol.solana.common.update.MetaplexMetaUpdateListener
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -17,9 +16,6 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.toList
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.context.annotation.Lazy
 import org.springframework.stereotype.Component
 
 @Component
@@ -27,12 +23,6 @@ class TokenMetaService(
     private val metaplexMetaRepository: MetaplexMetaRepository,
     private val metaplexOffChainMetaRepository: MetaplexOffChainMetaRepository,
 ) {
-
-    private val logger = LoggerFactory.getLogger(TokenMetaService::class.java)
-
-    @Lazy
-    @Autowired
-    private lateinit var metaplexMetaUpdateListener: MetaplexMetaUpdateListener
 
     private suspend fun getOnChainMeta(tokenAddress: TokenId): MetaplexMeta? =
         metaplexMetaRepository.findByTokenAddress(tokenAddress)
@@ -117,22 +107,6 @@ class TokenMetaService(
             onChainMeta = onChainMeta.metaFields,
             offChainMeta = offChainMeta?.metaFields
         )
-    }
-
-    suspend fun onMetaplexMetaChanged(metaplexMeta: MetaplexMeta) {
-        val offChainMeta = getOffChainMeta(metaplexMeta.tokenAddress)
-        if (offChainMeta == null) {
-            logger.info(
-                "There is no off-chain meta loaded for ${metaplexMeta.tokenAddress}, " +
-                        "so ignoring the on-chain metaplex meta update yet."
-            )
-            return
-        }
-        val tokenMeta = TokenMetaParser.mergeOnChainAndOffChainMeta(
-            onChainMeta = metaplexMeta.metaFields,
-            offChainMeta = offChainMeta.metaFields
-        )
-        metaplexMetaUpdateListener.onTokenMetaChanged(metaplexMeta.tokenAddress, tokenMeta)
     }
 
     private suspend fun Flow<MetaplexOffChainMeta>.toTokenAddressOffChainMetaMap() =

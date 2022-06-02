@@ -22,6 +22,8 @@ import com.rarible.protocol.solana.common.model.MetaplexOffChainMetaFields
 import com.rarible.protocol.solana.common.model.MetaplexTokenCreator
 import com.rarible.protocol.solana.common.model.Order
 import com.rarible.protocol.solana.common.model.OrderStatus
+import com.rarible.protocol.solana.common.model.SolanaCollectionV1
+import com.rarible.protocol.solana.common.model.SolanaCollectionV2
 import com.rarible.protocol.solana.common.model.Token
 import com.rarible.protocol.solana.common.model.TokenFtAssetType
 import com.rarible.protocol.solana.common.model.TokenNftAssetType
@@ -78,22 +80,13 @@ fun createRandomMetaplexMetaFields() = MetaplexMetaFields(
 )
 
 fun createRandomMetaplexOffChainMetaFields(): MetaplexOffChainMetaFields {
-    val collectionName = randomString()
-    val collectionFamily = randomString()
     val creators = listOf(MetaplexTokenCreator(randomAccount(), 100, randomBoolean()))
+    val collection = createRandomMetaplexOffChainCollection(creators.map { it.address })
     return MetaplexOffChainMetaFields(
         name = randomString(),
         symbol = randomString(),
         description = randomString(),
-        collection = MetaplexOffChainMetaFields.Collection(
-            name = collectionName,
-            family = collectionFamily,
-            hash = MetaplexOffChainCollectionHash.calculateCollectionHash(
-                name = collectionName,
-                family = collectionFamily,
-                creators = creators.map { it.address }
-            )
-        ),
+        collection = collection,
         sellerFeeBasisPoints = randomInt(),
         externalUrl = randomUrl(),
         edition = randomString(),
@@ -118,6 +111,18 @@ fun createRandomMetaplexOffChainMetaFields(): MetaplexOffChainMetaFields {
         animationUrl = randomString()
     )
 }
+
+fun createRandomMetaplexOffChainCollection(
+    creators: List<String> = listOf(randomAccount())
+) = MetaplexOffChainMetaFields.Collection(
+    name = "name",
+    family = "family",
+    hash = MetaplexOffChainCollectionHash.calculateCollectionHash(
+        name = "name",
+        family = "family",
+        creators = creators
+    )
+)
 
 fun createRandomTokenMeta(): TokenMeta =
     TokenMeta(
@@ -205,6 +210,25 @@ fun createRandomBalanceWithMeta(
 ): BalanceWithMeta = BalanceWithMeta(
     balance = createRandomBalance(account = account, owner = owner, mint = mint, updatedAt = updatedAt),
     tokenMeta = createRandomTokenMeta()
+)
+
+fun createRandomCollectionV1(
+    id: String = randomString()
+) = SolanaCollectionV1(
+    id = id,
+    name = randomString(),
+    family = randomString(),
+    createdAt = nowMillis(),
+    updatedAt = nowMillis()
+)
+
+fun createRandomCollectionV2(
+    id: String = randomMint()
+) = SolanaCollectionV2(
+    id = id,
+    createdAt = nowMillis(),
+    updatedAt = nowMillis(),
+    collectionMeta = createRandomTokenMeta()
 )
 
 fun randomUrl(): String = "https://test.com/" + randomString()

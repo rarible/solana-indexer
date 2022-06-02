@@ -17,12 +17,15 @@ import com.rarible.protocol.solana.common.meta.TokenMetaService
 import com.rarible.protocol.solana.common.pubkey.SolanaProgramId
 import com.rarible.protocol.solana.common.repository.AuctionHouseRepository
 import com.rarible.protocol.solana.common.repository.BalanceRepository
+import com.rarible.protocol.solana.common.repository.CollectionRepository
 import com.rarible.protocol.solana.common.repository.EscrowRepository
 import com.rarible.protocol.solana.common.repository.MetaplexMetaRepository
 import com.rarible.protocol.solana.common.repository.MetaplexOffChainMetaRepository
 import com.rarible.protocol.solana.common.repository.OrderRepository
 import com.rarible.protocol.solana.common.repository.TokenRepository
-import com.rarible.protocol.solana.common.service.CollectionService
+import com.rarible.protocol.solana.common.service.collection.CollectionEventPublisher
+import io.mockk.clearMocks
+import io.mockk.coEvery
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.runBlocking
@@ -78,6 +81,9 @@ abstract class AbstractBlockScannerTest {
     protected lateinit var metaplexMetaRepository: MetaplexMetaRepository
 
     @Autowired
+    protected lateinit var metaplexOffChainMetaRepository: MetaplexOffChainMetaRepository
+
+    @Autowired
     protected lateinit var tokenMetaService: TokenMetaService
 
     @Autowired
@@ -88,26 +94,25 @@ abstract class AbstractBlockScannerTest {
     protected lateinit var testMetaplexOffChainMetaLoader: MetaplexOffChainMetaLoader
 
     @Autowired
-    @Qualifier("test.metaplex.off.chain.meta.repository")
-    protected lateinit var metaplexOffChainMetaRepository: MetaplexOffChainMetaRepository
-
-    @Autowired
     protected lateinit var tokenRepository: TokenRepository
 
     @Autowired
-    protected lateinit var collectionService: CollectionService
+    protected lateinit var collectionRepository: CollectionRepository
+
+    @Autowired
+    protected lateinit var collectionEventPublisher: CollectionEventPublisher
 
     @Autowired
     protected lateinit var balanceRepository: BalanceRepository
-
-    @Autowired
-    protected lateinit var auctionHouseFilter: SolanaAuctionHouseFilter
 
     @Autowired
     protected lateinit var orderRepository: OrderRepository
 
     @Autowired
     protected lateinit var actionHouseRepository: AuctionHouseRepository
+
+    @Autowired
+    protected lateinit var auctionHouseFilter: SolanaAuctionHouseFilter
 
     @Autowired
     protected lateinit var escrowRepository: EscrowRepository
@@ -135,6 +140,8 @@ abstract class AbstractBlockScannerTest {
 
     @BeforeEach
     fun cleanupMocks() {
+        clearMocks(testMetaplexOffChainMetaLoader)
+        coEvery { testMetaplexOffChainMetaLoader.loadMetaplexOffChainMeta(any(), any()) } returns null
     }
 
     protected fun airdrop(sol: Int, address: String): String {

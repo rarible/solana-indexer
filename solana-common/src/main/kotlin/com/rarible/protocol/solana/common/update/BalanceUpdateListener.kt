@@ -17,8 +17,8 @@ class BalanceUpdateListener(
     private val logger = LoggerFactory.getLogger(BalanceUpdateListener::class.java)
 
     suspend fun onBalanceChanged(balance: Balance) {
-        val balance = tokenMetaService.extendWithAvailableMeta(balance)
-        onBalanceChanged(balance)
+        val balanceWithMeta = tokenMetaService.extendWithAvailableMeta(balance)
+        onBalanceChanged(balanceWithMeta)
     }
 
     suspend fun onBalanceChanged(balanceWithMeta: BalanceWithMeta) {

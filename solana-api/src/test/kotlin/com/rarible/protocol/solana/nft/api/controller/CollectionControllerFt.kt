@@ -1,15 +1,11 @@
 package com.rarible.protocol.solana.nft.api.controller
 
-import com.rarible.core.test.data.randomString
-import com.rarible.protocol.solana.common.model.SolanaCollectionV1
-import com.rarible.protocol.solana.common.model.SolanaCollectionV2
 import com.rarible.protocol.solana.common.repository.CollectionRepository
-import com.rarible.protocol.solana.common.service.CollectionConverter
+import com.rarible.protocol.solana.common.service.collection.CollectionConverter
 import com.rarible.protocol.solana.dto.CollectionsByIdRequestDto
 import com.rarible.protocol.solana.nft.api.test.AbstractControllerTest
-import com.rarible.protocol.solana.test.createRandomMetaplexMeta
-import com.rarible.protocol.solana.test.createRandomMetaplexOffChainMeta
-import com.rarible.protocol.solana.test.randomMint
+import com.rarible.protocol.solana.test.createRandomCollectionV1
+import com.rarible.protocol.solana.test.createRandomCollectionV2
 import kotlinx.coroutines.reactive.awaitFirst
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -19,43 +15,35 @@ import org.springframework.beans.factory.annotation.Autowired
 class CollectionControllerFt : AbstractControllerTest() {
 
     @Autowired
-    private lateinit var collectionConverter: CollectionConverter
-
-    @Autowired
     private lateinit var collectionRepository: CollectionRepository
 
     @Test
-    fun `collection v1`() = runBlocking<Unit> {
-        val collectionV1 = SolanaCollectionV1(randomString(), randomString(), randomString())
+    fun `find collection v1 by id`() = runBlocking<Unit> {
+        val collectionV1 = createRandomCollectionV1()
         collectionRepository.save(collectionV1)
         val result = collectionControllerApi.getCollectionById(collectionV1.id).awaitFirst()
-        assertThat(result).isEqualTo(collectionConverter.toDto(collectionV1))
+        assertThat(result).isEqualTo(CollectionConverter.toDto(collectionV1))
     }
 
     @Test
-    fun `collection v2`() = runBlocking<Unit> {
-        val collectionMint = randomMint()
-        val collectionNft = createRandomMetaplexMeta(mint = collectionMint)
-        val metaOffChain = createRandomMetaplexOffChainMeta(mint = collectionMint)
-        val collectionV2 = SolanaCollectionV2(collectionMint)
+    fun `find collection v2 by id`() = runBlocking<Unit> {
+        val collectionV2 = createRandomCollectionV2()
 
-        metaplexMetaRepository.save(collectionNft)
-        metaplexOffChainMetaRepository.save(metaOffChain)
         collectionRepository.save(collectionV2)
 
-        val expected = collectionConverter.toDto(SolanaCollectionV2(collectionMint))
+        val expected = CollectionConverter.toDto(collectionV2)
         val result = collectionControllerApi.getCollectionById(collectionV2.id).awaitFirst()
         assertThat(result).isEqualTo(expected)
     }
 
     @Test
     fun `search by ids`() = runBlocking<Unit> {
-        val c1 = SolanaCollectionV1(randomString(), randomString(), randomString())
+        val c1 = createRandomCollectionV1()
         collectionRepository.save(c1)
-        val c2 = SolanaCollectionV1(randomString(), randomString(), randomString())
+        val c2 = createRandomCollectionV1()
         collectionRepository.save(c2)
-        val expected1 = collectionConverter.toDto(c1)
-        val expected2 = collectionConverter.toDto(c2)
+        val expected1 = CollectionConverter.toDto(c1)
+        val expected2 = CollectionConverter.toDto(c2)
 
         val actual = collectionControllerApi.searchCollectionsByIds(
             CollectionsByIdRequestDto(listOf(c1.id, c2.id))

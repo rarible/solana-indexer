@@ -3,19 +3,18 @@ package com.rarible.protocol.solana.nft.listener
 import com.rarible.blockchain.scanner.solana.EnableSolanaScanner
 import com.rarible.core.kafka.RaribleKafkaConsumer
 import com.rarible.protocol.solana.common.meta.MetaplexOffChainMetaLoader
-import com.rarible.protocol.solana.common.repository.MetaplexOffChainMetaRepository
 import com.rarible.protocol.solana.dto.BalanceEventDto
 import com.rarible.protocol.solana.dto.CollectionEventDto
 import com.rarible.protocol.solana.dto.TokenEventDto
 import com.rarible.protocol.solana.subscriber.SolanaEventsConsumerFactory
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
-import io.mockk.coEvery
 import io.mockk.mockk
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.Primary
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -27,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Configuration
 @EnableSolanaScanner
 @EnableAutoConfiguration
+@Import(TestUnionServiceMetaLoadingEmulatorConfiguration::class)
 class TestSolanaScannerConfiguration {
     @Bean
     fun meterRegistry(): MeterRegistry = SimpleMeterRegistry()
@@ -47,13 +47,6 @@ class TestSolanaScannerConfiguration {
     @Primary
     @Qualifier("test.solana.meta.loader")
     fun testSolanaMetaLoader(): MetaplexOffChainMetaLoader = mockk()
-
-    @Bean
-    @Primary
-    @Qualifier("test.metaplex.off.chain.meta.repository")
-    fun testMetaplexOffChainMetaRepository(): MetaplexOffChainMetaRepository = mockk(relaxed = true) {
-        coEvery { findByTokenAddress(any()) } returns null
-    }
 
     @RestController
     class MetaController {

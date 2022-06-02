@@ -1,72 +1,73 @@
 package com.rarible.protocol.solana.common.service
 
+import com.rarible.core.common.nowMillis
 import com.rarible.core.test.data.randomString
-import com.rarible.protocol.solana.AbstractIntegrationTest
-import com.rarible.protocol.solana.common.meta.TokenMetaParser
+import com.rarible.protocol.solana.common.converter.TokenMetaConverter
 import com.rarible.protocol.solana.common.model.SolanaCollectionV1
 import com.rarible.protocol.solana.common.model.SolanaCollectionV2
-import com.rarible.protocol.solana.common.repository.MetaplexMetaRepository
-import com.rarible.protocol.solana.common.repository.MetaplexOffChainMetaRepository
+import com.rarible.protocol.solana.common.service.collection.CollectionConverter
 import com.rarible.protocol.solana.dto.CollectionDto
-import com.rarible.protocol.solana.test.createRandomMetaplexMeta
-import com.rarible.protocol.solana.test.createRandomMetaplexOffChainMeta
+import com.rarible.protocol.solana.dto.CollectionMetaDto
+import com.rarible.protocol.solana.test.createRandomTokenMeta
+import com.rarible.protocol.solana.test.randomMint
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
 
-class CollectionConverterIt : AbstractIntegrationTest() {
-
-    @Autowired
-    lateinit var collectionConverter: CollectionConverter
-
-    @Autowired
-    lateinit var metaplexMetaRepository: MetaplexMetaRepository
-
-    @Autowired
-    lateinit var metaplexOffChainMetaRepository: MetaplexOffChainMetaRepository
+class CollectionConverterIt {
 
     @Test
-    fun `to dto - f1`() = runBlocking<Unit> {
-        val collection = SolanaCollectionV1(randomString(), randomString(), randomString())
+    fun `to dto - v1`() = runBlocking<Unit> {
+        val collection = SolanaCollectionV1(
+            id = randomString(),
+            name = randomString(),
+            family = randomString(),
+            createdAt = nowMillis(),
+            updatedAt = nowMillis()
+        )
 
-        val expected = CollectionDto(address = collection.id, name = collection.name)
+        val dto = CollectionConverter.toDto(collection)
 
-        val dto = collectionConverter.toDto(collection)
-
-        assertThat(dto).isEqualTo(expected)
+        assertThat(dto).isEqualTo(
+            CollectionDto(
+                address = collection.id,
+                name = collection.name
+            )
+        )
     }
 
     @Test
-    fun `to dto - v2 without offchain meta`() = runBlocking<Unit> {
-        val meta = createRandomMetaplexMeta()
-        val collection = SolanaCollectionV2(meta.tokenAddress)
+    fun `to dto - v2`() = runBlocking<Unit> {
+        val collectionMint = randomMint()
+        val tokenMeta = createRandomTokenMeta()
+        val collection = SolanaCollectionV2(
+            id = collectionMint,
+            createdAt = nowMillis(),
+            updatedAt = nowMillis(),
+            collectionMeta = tokenMeta
+        )
 
-        metaplexMetaRepository.save(meta)
+        val dto = CollectionConverter.toDto(collection)
 
-        val tokenMeta = TokenMetaParser.mergeOnChainAndOffChainMeta(meta.metaFields, null)
-        val expected = collectionConverter.convertV2(collection, tokenMeta)
-
-        val dto = collectionConverter.toDto(collection)
-
-        assertThat(dto).isEqualTo(expected)
-    }
-
-    @Test
-    fun `to dto - v2 with offchain meta`() = runBlocking<Unit> {
-        val meta = createRandomMetaplexMeta()
-        val metaOff = createRandomMetaplexOffChainMeta().copy(tokenAddress = meta.tokenAddress)
-        val collection = SolanaCollectionV2(meta.tokenAddress)
-
-        metaplexMetaRepository.save(meta)
-        metaplexOffChainMetaRepository.save(metaOff)
-
-        val tokenMeta = TokenMetaParser.mergeOnChainAndOffChainMeta(meta.metaFields, metaOff.metaFields)
-        val expected = collectionConverter.convertV2(collection, tokenMeta)
-
-        val dto = collectionConverter.toDto(collection)
-
-        assertThat(dto).isEqualTo(expected)
+        assertThat(dto).isEqualTo(
+            CollectionDto(
+                address = collectionMint,
+                parent = null,
+                name = tokenMeta.name,
+                symbol = tokenMeta.symbol,
+                owner = null,
+                features = emptyList(),
+                creators = tokenMeta.creators.map { it.address },
+                meta = CollectionMetaDto(
+                    name = tokenMeta.name,
+                    description = tokenMeta.description,
+                    content = TokenMetaConverter.convert(tokenMeta).content,
+                    externalLink = tokenMeta.externalUrl,
+                    sellerFeeBasisPoints = tokenMeta.sellerFeeBasisPoints,
+                    feeRecipient = null
+                )
+            )
+        )
     }
 
 }

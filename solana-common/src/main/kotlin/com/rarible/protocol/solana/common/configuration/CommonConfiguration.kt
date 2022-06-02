@@ -24,7 +24,8 @@ import java.time.Clock
     RepositoryConfiguration::class,
     EventProducerConfiguration::class,
     SolanaMetaConfiguration::class,
-    SolanaServiceConfiguration::class
+    SolanaServiceConfiguration::class,
+    InternalEventProducerConfiguration::class
 )
 @EnableConfigurationProperties(SolanaIndexerProperties::class)
 @ComponentScan(basePackageClasses = [PackageConverters::class])
