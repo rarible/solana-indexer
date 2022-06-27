@@ -7,7 +7,8 @@ def pipelineConfig = [
         [name: 'solana-indexer', path: './solana-indexer'],
         [name: 'solana-api', path: './solana-api']
     ],
-    "slackChannel": "#protocol-duty"
+    "slackChannel": "#protocol-duty",
+    "baseImageVersion": "11-9e56e2-9"
 ]
 
 serviceCI(pipelineConfig)
